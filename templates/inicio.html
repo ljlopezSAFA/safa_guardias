@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block body %}
+
+
+    <!-- Panel de Control Principal -->
+<main class="container mb-5">
+    <div class="row g-4">
+        <!-- Columna de Gestión Automática -->
+        <div class="col-md-4">
+            <div class="card h-100 card-action shadow-sm p-4">
+                <div class="text-center mb-3">
+                    <i class="bi bi-cpu fs-1 text-primary"></i>
+                </div>
+                <h4 class="text-center">Profesorado</h4>
+                <p class="text-muted text-center small">Información sobre los docentes</p>
+                <a href="{% url 'mostrar_profesores' %}">
+                    <button class="btn btn-safa mt-auto">Ver Profesorado</button>
+                </a>
+            </div>
+        </div>
+
+        <!-- Columna de Horarios de Grupos -->
+        <div class="col-md-4">
+            <div class="card h-100 card-action shadow-sm p-4">
+                <div class="text-center mb-3">
+                    <i class="bi bi-table fs-1 text-primary"></i>
+                </div>
+                <h4 class="text-center">Horarios de Grupos</h4>
+                <p class="text-muted text-center small">Consulta dónde debería estar cada grupo y qué docente les
+                    imparte clase en este tramo horario.</p>
+                <a href="{% url 'mostrar_aulas' %}">
+                    <button class="btn btn-safa mt-auto">Ver Aulas</button>
+                </a>
+            </div>
+        </div>
+
+        <!-- Columna de Salidas y Excursiones -->
+        <div class="col-md-4">
+            <div class="card h-100 card-action shadow-sm p-4">
+                <div class="text-center mb-3">
+                    <i class="bi bi-geo-alt fs-1 text-primary"></i>
+                </div>
+                <h4 class="text-center">Salidas Escolares</h4>
+                <p class="text-muted text-center small">Registro de actividades fuera del centro para prever ausencias
+                    programadas de larga duración.</p>
+                <button class="btn btn-outline-secondary mt-auto">Gestionar Salidas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla Rápida de Profesores Ausentes (Ejemplo) -->
+    <div class="mt-5 bg-white p-4 rounded-4 shadow-sm">
+        <h5 class="mb-4 fw-bold"><i class="bi bi-person-x-fill text-danger"></i> Ausencias Detectadas (Tramo Actual)
+        </h5>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Profesor/a</th>
+                    <th>Grupo afectado</th>
+                    <th>Aula</th>
+                    <th>Estado Guardia</th>
+                    <th>Acción</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>García López, Manuel</td>
+                    <td>2º Bachillerato A</td>
+                    <td>B-104</td>
+                    <td><span class="badge bg-danger">Pendiente</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-primary">Asignar ahora</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Rodríguez Sanz, Ana</td>
+                    <td>1º ESO C</td>
+                    <td>C-02</td>
+                    <td><span class="badge bg-success">Asignada (Pérez, J.)</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-light">Ver detalles</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+
+
+
+
+{% endblock %}
