@@ -2,21 +2,29 @@
 
 {% block body %}
 <div class="container-fluid py-4">
-    <div class="card shadow-sm border-0 rounded-4">
-        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-            <h4 class="fw-bold mb-0 icon-safa">
-                <i class="bi bi-calendar3 me-2"></i>Cuadrante General de Guardias
-            </h4>
-            <a href="{% url 'index' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
-                <i class="bi bi-arrow-left"></i> Volver
-            </a>
+    <div class="card shadow-sm border-0 rounded-4 mb-4">
+        <div class="card-header bg-white py-3 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <div>
+                <h4 class="fw-bold mb-0 icon-safa text-dark">
+                    <i class="bi bi-stack me-2"></i>Cuadrante de Prioridades
+                </h4>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="badge border text-dark" style="background-color: #ffe3e3; border-color: #dc3545 !important;">P0-1: Crítica</span>
+                <span class="badge border text-dark" style="background-color: #fff4e6; border-color: #fd7e14 !important;">P2-3: Urgente</span>
+                <span class="badge border text-dark" style="background-color: #e7f1ff; border-color: #0d6efd !important;">P4: Alta (Lectiva)</span>
+                <span class="badge border text-dark" style="background-color: #eafaf1; border-color: #198754 !important;">P5: Baja</span>
+            </div>
         </div>
+    </div>
+
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-bordered mb-0 align-middle">
                     <thead class="bg-light text-center">
-                        <tr>
-                            <th style="width: 150px;" class="py-3">Horario</th>
+                        <tr class="text-uppercase" style="font-size: 0.75rem; letter-spacing: 1px;">
+                            <th style="width: 100px;" class="py-3 bg-white">Hora</th>
                             <th class="py-3 text-primary">Lunes</th>
                             <th class="py-3 text-primary">Martes</th>
                             <th class="py-3 text-primary">Miércoles</th>
@@ -27,25 +35,54 @@
                     <tbody>
                         {% for fila in cuadrante %}
                         <tr>
-                            <td class="text-center fw-bold bg-light">
-                                {{ fila.inicio|time:"H:i" }} - {{ fila.fin|time:"H:i" }}
+                            <td class="text-center fw-bold bg-light" style="font-size: 0.8rem;">
+                                {{ fila.inicio|time:"H:i" }}<br>—<br>{{ fila.fin|time:"H:i" }}
                             </td>
+
                             {% for celda in fila.columnas %}
-                            <td class="p-2" style="min-width: 180px; vertical-align: top;">
-                                {% for guardia in celda %}
-                                <div class="p-2 mb-1 rounded-3 shadow-sm border-start border-4
-                                    {% if 'GU-CO' in guardia.tipo_guardia %}border-warning bg-warning bg-opacity-10
-                                    {% elif 'HC' in guardia.tipo_guardia %}border-info bg-info bg-opacity-10
-                                    {% else %}border-secondary bg-light{% endif %}"
-                                    style="font-size: 0.85rem;">
-                                    <strong>{{ guardia.tipo_guardia }}</strong><br>
-                                    <span class="text-dark">{{ guardia.profesor.apellidos }}, {{ guardia.profesor.nombre|slice:":1" }}.</span>
-                                </div>
+                            <td class="p-2" style="min-width: 190px; vertical-align: top; background-color: #fafafa;">
+
+                                {# ORDENACIÓN POR PRIORIDAD (0 es el primero) #}
+                                {% for guardia in celda|dictsort:"prioridad" %}
+
+                                    {% if guardia.prioridad <= 1 %}
+                                        <div class="prioridad-card p-border-01" style="background-color: #ffe3e3;">
+                                            <span class="p-badge bg-danger">P{{ guardia.prioridad }}</span>
+
+                                    {% elif guardia.prioridad <= 3 %}
+                                        <div class="prioridad-card p-border-23" style="background-color: #fff4e6;">
+                                            <span class="p-badge" style="background-color: #fd7e14; color: white;">P{{ guardia.prioridad }}</span>
+
+                                    {% elif guardia.prioridad == 4 %}
+                                        <div class="prioridad-card p-border-4" style="background-color: #e7f1ff;">
+                                            <span class="p-badge bg-primary">P{{ guardia.prioridad }}</span>
+
+                                    {% else %}
+                                        <div class="prioridad-card p-border-5" style="background-color: #eafaf1;">
+                                            <span class="p-badge bg-success">P{{ guardia.prioridad }}</span>
+                                    {% endif %}
+
+                                            <div class="d-flex flex-column">
+                                                <small class="text-uppercase fw-bold opacity-75 mb-1" style="font-size: 0.65rem;">
+                                                    {{ guardia.tipo_guardia }}
+                                                </small>
+                                                <div class="fw-bold text-dark" style="font-size: 0.85rem; line-height: 1.1;">
+                                                    {{ guardia.profesor.apellidos }}, {{ guardia.profesor.nombre|slice:":1" }}.
+                                                </div>
+                                                {% if guardia.aula %}
+                                                <div class="mt-2 pt-1 border-top border-dark border-opacity-10 small opacity-75">
+                                                    <i class="bi bi-door-open me-1"></i>{{ guardia.aula }}
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+
                                 {% empty %}
-                                <div class="text-center py-2 text-muted opacity-25">
-                                    <i class="bi bi-slash-circle"></i>
-                                </div>
+                                    <div class="text-center py-4 text-muted opacity-10">
+                                        <i class="bi bi-slash-circle fs-4"></i>
+                                    </div>
                                 {% endfor %}
+
                             </td>
                             {% endfor %}
                         </tr>
@@ -56,4 +93,47 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Tarjeta base */
+    .prioridad-card {
+        padding: 10px;
+        margin-bottom: 8px;
+        border-radius: 12px;
+        border-left: 6px solid;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        position: relative;
+        transition: transform 0.15s ease;
+    }
+
+    .prioridad-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    /* Bordes específicos por prioridad */
+    .p-border-01 { border-color: #dc3545 !important; } /* Rojo */
+    .p-border-23 { border-color: #fd7e14 !important; } /* Naranja */
+    .p-border-4  { border-color: #0d6efd !important; } /* Azul */
+    .p-border-5  { border-color: #198754 !important; } /* Verde */
+
+    /* Badge de prioridad arriba a la derecha */
+    .p-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        font-size: 0.6rem;
+        font-weight: 800;
+        padding: 3px 6px;
+        border-radius: 6px;
+    }
+
+    .table-bordered td { border-color: #f0f0f0 !important; }
+
+    /* Para pantallas pequeñas */
+    @media (max-width: 768px) {
+        .prioridad-card { padding: 6px; }
+        .p-badge { position: static; display: inline-block; margin-bottom: 5px; }
+    }
+</style>
 {% endblock %}

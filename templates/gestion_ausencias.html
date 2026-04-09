@@ -2,13 +2,13 @@
 
 {% block body %}
 <div class="container py-4">
-    
+
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-1 icon-safa">
                 <i class="bi bi-calendar2-x me-2"></i>Gestión de Ausencias y Salidas
             </h3>
-            <p class="text-muted mb-0">Control de bajas del profesorado y excursiones de grupos</p>
+            <p class="text-muted mb-0">Control de bajas, permisos por horas y excursiones</p>
         </div>
         <a href="{% url 'index' %}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
             <i class="bi bi-arrow-left me-2"></i>Volver al Inicio
@@ -17,57 +17,86 @@
 
     <div class="row g-4">
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card border-0 shadow-sm rounded-4 h-100 overflow-hidden">
                 <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex justify-content-between align-items-center">
                     <h5 class="fw-bold mb-0 text-danger">
-                        <i class="bi bi-person-dash-fill me-2"></i>Bajas Activas
+                        <i class="bi bi-person-dash-fill me-2"></i>Personal Ausente
                     </h5>
-                    <a href="{% url 'crear_baja' %}" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm">
-                        <i class="bi bi-plus-lg"></i> Registrar Baja
-                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-safa-danger dropdown-toggle rounded-pill px-3 shadow-sm" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-plus-lg"></i> Registrar
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                            <li><a class="dropdown-item" href="{% url 'crear_baja' %}"><i class="bi bi-hospital me-2"></i>Baja Completa</a></li>
+                            <li><a class="dropdown-item" href="{% url 'crear_ausencia_puntual' %}"><i class="bi bi-clock me-2"></i>Ausencia por Horas</a></li>
+                        </ul>
+                    </div>
                 </div>
+
                 <div class="card-body p-0">
-                    <div class="list-group list-group-flush border-top">
+                    <div class="bg-light px-4 py-2 border-top border-bottom">
+                        <small class="fw-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Bajas de larga duración</small>
+                    </div>
+                    <div class="list-group list-group-flush">
                         {% for baja in bajas_activas %}
-                            <div class="list-group-item border-0 p-4 border-bottom">
+                            <div class="list-group-item border-0 px-4 py-3 border-bottom">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
-                                            <span class="fw-bold">{{ baja.profesor.abreviatura }}</span>
+                                        <div class="rounded-circle bg-danger bg-opacity-10 text-danger d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; min-width: 40px;">
+                                            <span class="fw-bold small">{{ baja.profesor.abreviatura }}</span>
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold">{{ baja.profesor.apellidos }}, {{ baja.profesor.nombre }}</h6>
-                                            <small class="text-muted">
-                                                Desde: {{ baja.fecha_inicio|date:"d/m/Y" }}
-                                                {% if baja.fecha_fin %}
-                                                    - Hasta: {{ baja.fecha_fin|date:"d/m/Y" }}
-                                                {% else %}
-                                                    <span class="badge bg-secondary ms-1">Indefinida</span>
-                                                {% endif %}
+                                            <h6 class="mb-0 fw-bold small text-dark">{{ baja.profesor.apellidos }}, {{ baja.profesor.nombre }}</h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">
+                                                Desde: {{ baja.fecha_inicio|date:"d/m" }} {% if baja.fecha_fin %}al {{ baja.fecha_fin|date:"d/m" }}{% endif %}
                                             </small>
                                         </div>
                                     </div>
-                                    <div class="d-flex text-nowrap">
-                                        <a href="{% url 'editar_baja' baja.id %}" class="btn btn-sm btn-light border text-primary" title="Editar / Dar de alta">
+                                    <div class="d-flex">
+                                        <a href="{% url 'editar_baja' baja.id %}" class="btn btn-sm btn-light border text-primary px-2" title="Editar">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
-                                        <a href="{% url 'eliminar_baja' baja.id %}" class="btn btn-sm btn-light border text-danger ms-1" onclick="return confirm('¿Seguro que deseas eliminar esta baja por completo?');" title="Eliminar">
+                                        <a href="{% url 'eliminar_baja' baja.id %}" class="btn btn-sm btn-light border text-danger ms-1 px-2" onclick="return confirm('¿Eliminar registro de baja?');">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </div>
                                 </div>
-                                {% if baja.observaciones %}
-                                    <p class="small text-muted mt-2 mb-0 ms-5 ps-2 border-start border-2 border-danger opacity-75">
-                                        <i class="bi bi-info-circle me-1"></i>{{ baja.observaciones }}
-                                    </p>
-                                {% endif %}
                             </div>
                         {% empty %}
-                            <div class="p-5 text-center text-muted">
-                                <i class="bi bi-emoji-smile d-block fs-1 mb-3 text-success opacity-50"></i>
-                                <h6>No hay bajas activas</h6>
-                                <p class="small mb-0">Todo el profesorado está disponible.</p>
+                            <p class="text-center text-muted small py-3 mb-0">No hay bajas de larga duración.</p>
+                        {% endfor %}
+                    </div>
+
+                    <div class="bg-light px-4 py-2 border-top border-bottom">
+                        <small class="fw-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Ausencias por horas (Hoy)</small>
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for aus in ausencias_hoy %}
+                            <div class="list-group-item border-0 px-4 py-3 border-bottom" style="background-color: #fef9e7;">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            <span class="badge btn-safa-warning py-1 px-2" style="font-size: 0.7rem;">
+                                                {{ aus.hora_inicio|time:"H:i" }} - {{ aus.hora_fin|time:"H:i" }}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold small text-dark">{{ aus.profesor.apellidos }}</h6>
+                                            {% if aus.motivo %}<small class="text-muted d-block small">{{ aus.motivo }}</small>{% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="d-flex">
+                                        <a href="{% url 'editar_ausencia' aus.id %}" class="btn btn-sm btn-light border text-warning px-2">
+                                            <i class="bi bi-clock-history"></i>
+                                        </a>
+                                        <a href="{% url 'eliminar_ausencia' aus.id %}" class="btn btn-sm btn-light border text-danger ms-1 px-2">
+                                            <i class="bi bi-x-lg"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
+                        {% empty %}
+                            <p class="text-center text-muted small py-3 mb-0">No hay ausencias cortas para hoy.</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -80,7 +109,7 @@
                     <h5 class="fw-bold mb-0 text-success">
                         <i class="bi bi-bus-front-fill me-2"></i>Salidas y Excursiones
                     </h5>
-                    <a href="{% url 'crear_salida' %}" class="btn btn-sm btn-outline-success rounded-pill px-3 shadow-sm">
+                    <a href="{% url 'crear_salida' %}" class="btn btn-sm btn-safa-success rounded-pill px-3 shadow-sm">
                         <i class="bi bi-plus-lg"></i> Nueva Salida
                     </a>
                 </div>
@@ -98,32 +127,24 @@
                             <tbody>
                                 {% for salida in excursiones %}
                                 <tr>
-                                    <td class="fw-bold text-dark" style="max-width: 200px;">
-                                        {{ salida.descripcion }}
-                                    </td>
+                                    <td class="fw-bold text-dark small" style="max-width: 180px;">{{ salida.descripcion }}</td>
                                     <td>
                                         <div class="small fw-bold text-dark">
                                             {{ salida.fecha_inicio|date:"d M" }} {% if salida.fecha_inicio != salida.fecha_fin %}- {{ salida.fecha_fin|date:"d M" }}{% endif %}
                                         </div>
-                                        <div class="x-small text-muted">
+                                        <div class="text-muted" style="font-size: 0.75rem;">
                                             <i class="bi bi-clock"></i> {{ salida.hora_inicio|time:"H:i" }} a {{ salida.hora_fin|time:"H:i" }}
                                         </div>
                                     </td>
                                     <td>
                                         <div class="mb-1">
-                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
-                                                <i class="bi bi-people-fill me-1"></i>
-                                                {% for grupo in salida.grupos_implicados.all %}
-                                                    {{ grupo.nombre }}{% if not forloop.last %}, {% endif %}
-                                                {% endfor %}
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size: 0.7rem;">
+                                                {% for grupo in salida.grupos_implicados.all %}{{ grupo.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
                                             </span>
                                         </div>
                                         <div>
-                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25">
-                                                <i class="bi bi-person-badge me-1"></i>
-                                                {% for profe in salida.profesores_acompanantes.all %}
-                                                    {{ profe.abreviatura }}{% if not forloop.last %}, {% endif %}
-                                                {% endfor %}
+                                            <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size: 0.7rem;">
+                                                {% for profe in salida.profesores_acompanantes.all %}{{ profe.abreviatura }}{% if not forloop.last %}, {% endif %}{% endfor %}
                                             </span>
                                         </div>
                                     </td>
@@ -131,17 +152,15 @@
                                         <a href="{% url 'editar_salida' salida.id %}" class="btn btn-sm btn-light border text-primary shadow-sm" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="{% url 'eliminar_salida' salida.id %}" class="btn btn-sm btn-light border text-danger shadow-sm ms-1" onclick="return confirm('¿Seguro que deseas cancelar esta excursión?');" title="Eliminar">
+                                        <a href="{% url 'eliminar_salida' salida.id %}" class="btn btn-sm btn-light border text-danger shadow-sm ms-1" onclick="return confirm('¿Cancelar excursión?');">
                                             <i class="bi bi-trash"></i>
                                         </a>
                                     </td>
                                 </tr>
                                 {% empty %}
                                 <tr>
-                                    <td colspan="4" class="text-center py-5 text-muted">
-                                        <i class="bi bi-calendar-x d-block fs-1 mb-3 opacity-50"></i>
-                                        <h6 class="mb-1">Sin salidas programadas</h6>
-                                        <p class="small mb-0">No hay excursiones para hoy ni para próximos días.</p>
+                                    <td colspan="4" class="text-center py-5 text-muted small">
+                                        No hay salidas programadas.
                                     </td>
                                 </tr>
                                 {% endfor %}

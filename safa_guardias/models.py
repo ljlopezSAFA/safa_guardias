@@ -142,3 +142,61 @@ class SalidaExcursion(models.Model):
 
     def __str__(self):
         return f"{self.descripcion} ({self.fecha_inicio.strftime('%d/%m/%Y')})"
+
+
+class AusenciaPuntual(models.Model):
+    profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE, related_name='ausencias_puntuales')
+    fecha = models.DateField(default=timezone.now, verbose_name="Fecha de la ausencia")
+
+    # Rango de horas de la ausencia
+    hora_inicio = models.TimeField(verbose_name="Desde las...")
+    hora_fin = models.TimeField(verbose_name="Hasta las...")
+
+    motivo = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Ausencia Puntual"
+        verbose_name_plural = "Ausencias Puntuales"
+
+    def __str__(self):
+        return f"Ausencia: {self.profesor.abreviatura} el {self.fecha.strftime('%d/%m')}"
+
+    @property
+    def esta_activa_ahora(self):
+        """Comprueba si la ausencia está ocurriendo en este preciso momento"""
+        ahora = timezone.now()
+        hoy = ahora.date()
+        hora_actual = ahora.time()
+
+        if self.fecha == hoy:
+            return self.hora_inicio <= hora_actual <= self.hora_fin
+        return False
+
+
+class RegistroGuardia(models.Model):
+    ESTADO_CHOICES = [
+        ('PENT', 'Pendiente'),
+        ('COB', 'Cubierta'),
+        ('AUTO', 'Autogestionada (Sin profesor)'),
+    ]
+
+    fecha = models.DateField(default=timezone.now)
+    tramo_horario = models.ForeignKey(TramoHorario, on_delete=models.CASCADE)
+    grupo = models.ForeignKey(Grupo, on_delete=models.CASCADE)
+    aula = models.ForeignKey(Aula, on_delete=models.CASCADE)
+    materia = models.ForeignKey(Materia, on_delete=models.CASCADE)
+
+    profesor_ausente = models.ForeignKey(Profesor, on_delete=models.CASCADE, related_name='clases_perdidas')
+    profesor_guardia = models.ForeignKey(Profesor, on_delete=models.SET_NULL, null=True, blank=True,
+                                         related_name='guardias_atendidas')
+
+    estado = models.CharField(max_length=4, choices=ESTADO_CHOICES, default='PENT')
+    observaciones = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = "Registro de Guardia"
+        verbose_name_plural = "Seguimiento de Guardias Diarias"
+        unique_together = ['fecha', 'tramo_horario', 'grupo', 'profesor_ausente']
+
+    def __str__(self):
+        return f"{self.fecha} - {self.tramo_horario} - {self.grupo}"

@@ -53,11 +53,15 @@
             <div class="col-xl-3 col-md-6">
                 <div class="card card-action shadow-sm p-4">
                     <div class="text-center mb-3">
-                        <i class="bi bi-backpack3 fs-1 icon-safa"></i>
+                        <div class="d-flex justify-content-center gap-2">
+                            <i class="bi bi-bus-front-fill fs-1 icon-safa"></i>
+                            <i class="bi bi-person-exclamation fs-1 icon-safa"></i>
+                        </div>
                     </div>
-                    <h5 class="text-center fw-bold">Salidas y Bajas</h5>
-                    <p class="text-muted text-center small mb-4">Registro de actividades y ausencias docentes.</p>
-                    <a href="{% url 'gestion_ausencias' %}" class="btn-safa w-100 mt-auto">Gestionar</a>
+                    <h5 class="text-center fw-bold">Excursiones y Ausencias</h5>
+                    <p class="text-muted text-center small mb-4">Gestiona las excursiones y la ausencia del
+                        profesorado.</p>
+                    <a href="{% url 'gestion_ausencias' %}" class="btn-safa w-100 mt-auto">Gestionar Ausencias</a>
                 </div>
             </div>
 
@@ -81,43 +85,65 @@
                         <h5 class="fw-bold mb-0">
                             <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Grupos sin profesor
                         </h5>
-                        <span class="badge bg-danger rounded-pill px-3">2 Pendientes</span>
+                        {% if conteo_pendientes > 0 %}
+                            <span class="badge bg-danger rounded-pill px-3">{{ conteo_pendientes }} Pendientes</span>
+                        {% endif %}
+                        <a href="{% url 'gestion_guardias_global' %}"
+                           class="btn btn-sm btn-safa shadow-sm rounded-pill px-3">
+                            <i class="bi bi-calendar-week me-1"></i> Planificador Avanzado
+                        </a>
                     </div>
                     <div class="card-body px-4 pt-3">
-                        <p class="text-muted small mb-3">Grupos detectados sin docente en el tramo actual.</p>
+                        <p class="text-muted small mb-3">Clases que requieren cobertura en este tramo horario.</p>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle table-panel">
                                 <thead class="table-light">
                                 <tr>
                                     <th>Profesor/a Ausente</th>
-                                    <th>Grupo afectado</th>
+                                    <th>Grupo</th>
                                     <th>Aula</th>
                                     <th>Estado</th>
+                                    <th>Asignado</th>
                                     <th class="text-end">Acción</th>
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr>
-                                    <td class="fw-bold text-dark">García López, Manuel</td>
-                                    <td>2º Bachillerato A</td>
-                                    <td><i class="bi bi-door-open text-muted"></i> B-104</td>
-                                    <td><span
-                                            class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill">Pendiente</span>
-                                    </td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-safa px-3 shadow-sm">Asignar Guardia</button>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td class="fw-bold text-dark">Rodríguez Sanz, Ana</td>
-                                    <td>1º ESO C</td>
-                                    <td><i class="bi bi-door-open text-muted"></i> C-02</td>
-                                    <td><span class="status-badge border border-primary"><i
-                                            class="bi bi-check2-circle"></i> Pérez, J.</span></td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-safa-light border px-3">Detalles</button>
-                                    </td>
-                                </tr>
+                                {% for g in guardias_pendientes %}
+                                    <tr>
+                                        <td class="fw-bold text-dark">{{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.</td>
+                                        <td>{{ g.grupo.nombre }}</td>
+                                        <td><i class="bi bi-door-open text-muted"></i> {{ g.aula.abrev }}</td>
+                                        <td>
+                                            {% if g.estado == 'PENT' %}
+                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill">Pendiente</span>
+                                            {% else %}
+                                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill">
+                                                    <i class="bi bi-check2-circle"></i> Cubierta
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="small fw-bold">{{ g.profesor_guardia.abreviatura|default:"-" }}</td>
+                                        <td class="text-end">
+                                            {% if g.estado == 'PENT' %}
+                                                <a href="{% url 'asignar_guardia' g.id %}"
+                                                   class="btn btn-sm btn-safa-danger px-3 shadow-sm">Asignar</a>
+                                            {% else %}
+                                                <button class="btn btn-sm btn-safa-light border px-2">Detalles</button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="6" class="text-center py-5 text-muted">
+                                            <i class="bi bi-check-circle-fill fs-1 text-success opacity-25 d-block mb-3"></i>
+                                            {% if tramo_actual %}
+                                                No hay ausencias detectadas para este tramo.
+                                            {% else %}
+                                                No hay actividad lectiva en este momento.
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
                                 </tbody>
                             </table>
                         </div>
@@ -131,41 +157,45 @@
                         <h5 class="fw-bold mb-0 icon-safa">
                             <i class="bi bi-person-badge me-2"></i>Disponibilidad
                         </h5>
-                        <p class="text-muted small mt-1 mb-0">Personal de guardia en este tramo</p>
+                        <p class="text-muted small mt-1 mb-0">Personal disponible en el centro</p>
                     </div>
-                    <div class="card-body p-0 mt-3">
-                        <div class="list-group list-group-flush border-top">
 
-                            {% for guardia in profes_de_guardia %}
-                                <div class="list-group-item border-0 p-3 prof-list-item guardia d-flex justify-content-between align-items-center">
+                    <div class="card-body p-0 mt-3 d-flex flex-column">
+
+                        <div class="list-group list-group-flush border-top flex-grow-1">
+                            {% for profe in profesores_disponibles %}
+                                <div class="list-group-item border-0 p-3 d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center me-3"
-                                             style="width: 40px; height: 40px;">
-                                            <i class="bi bi-shield-fill-check"></i>
+                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary border border-primary d-flex align-items-center justify-content-center me-3 fw-bold"
+                                             style="width: 40px; height: 40px; font-size: 0.9rem; letter-spacing: 1px;">
+                                            {{ profe.nombre|slice:":1" }}{{ profe.apellidos|slice:":1" }}
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold">{{ guardia.profesor.apellidos }}, {{ guardia.profesor.nombre }}</h6>
-                                            <small class="text-muted">{{ guardia.tipo_guardia }}</small>
+                                            <h6 class="mb-0 fw-bold small">{{ profe.apellidos }}, {{ profe.nombre }}</h6>
+                                            <small class="text-muted">Libre / Guardia</small>
                                         </div>
                                     </div>
-                                    <span class="badge bg-warning text-dark rounded-pill">En el centro</span>
+                                    {% if profe.porcentaje %}
+                                        <span class="badge {% if profe.porcentaje >= 80 %}bg-success{% elif profe.porcentaje >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill shadow-sm" style="font-size: 0.75rem;">
+                                            {{ profe.porcentaje }}%
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.7rem;">En el centro</span>
+                                    {% endif %}
                                 </div>
                             {% empty %}
                                 <div class="p-4 text-center text-muted">
                                     <i class="bi bi-info-circle d-block fs-2 mb-2"></i>
-                                    No hay guardias registradas para este tramo.
+                                    Sin personal libre detectado.
                                 </div>
                             {% endfor %}
-
                         </div>
-                        {% if profes_de_guardia %}
-                            <div class="p-3 text-center bg-light mt-auto">
-                                <a href="{% url 'visor_guardias' %}"
-                                   class="text-decoration-none small fw-bold icon-safa">
-                                    Ver cuadrante completo <i class="bi bi-arrow-right"></i>
-                                </a>
-                            </div>
-                        {% endif %}
+
+                        <div class="p-3 text-center bg-light border-top mt-auto">
+                            <a href="{% url 'visor_guardias' %}" class="text-decoration-none small fw-bold icon-safa">
+                                Ver cuadrante de guardias <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -175,29 +205,20 @@
     </main>
 
     <script>
-        // Recibimos la hora exacta del servidor desde Django
-        // Si por algún motivo no llega (ej: desarrollo), usamos la del PC local por defecto.
         let serverTime = new Date("{% if hora_servidor_iso %}{{ hora_servidor_iso }}{% else %}{{ '' }}{% endif %}");
         if (isNaN(serverTime.getTime())) {
             serverTime = new Date();
         }
 
         function updateClock() {
-            // Le sumamos 1 segundo a la hora del servidor en cada iteración
             serverTime.setSeconds(serverTime.getSeconds() + 1);
-
-            // Formato de hora (Ej: 10:45:30)
             const timeOptions = {hour: '2-digit', minute: '2-digit', second: '2-digit'};
             document.getElementById('realtime-clock').textContent = serverTime.toLocaleTimeString('es-ES', timeOptions);
-
-            // Formato de fecha (Ej: jueves, 15 de marzo de 2024)
             const dateOptions = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
             document.getElementById('realtime-date').textContent = serverTime.toLocaleDateString('es-ES', dateOptions);
         }
 
-        // Llamada inicial
         updateClock();
-        // Bucle que ejecuta la función cada 1000ms (1 segundo)
         setInterval(updateClock, 1000);
     </script>
 {% endblock %}
