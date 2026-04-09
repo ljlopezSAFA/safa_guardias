@@ -1,4 +1,7 @@
+from datetime import time
+
 from django.db import models
+from django.utils import timezone
 
 
 # Create your models here.
@@ -7,6 +10,13 @@ class Profesor(models.Model):
     apellidos = models.CharField(max_length=150)
     email = models.EmailField(unique=True)
     abreviatura = models.CharField(max_length=10, default='', unique=True)
+
+    class Meta:
+        ordering = ['apellidos', 'nombre']
+
+
+    def __str__(self):
+        return f"{self.apellidos} , {self.nombre}"
 
 
 class Aula(models.Model):
@@ -91,3 +101,44 @@ class HorarioGuardia(models.Model):
 
     def __str__(self):
         return f"Guardia {self.tipo_guardia} - {self.profesor.abreviatura} ({self.tramo_horario})"
+
+
+class BajaProfesor(models.Model):
+    profesor = models.ForeignKey(Profesor, on_delete=models.CASCADE, related_name='bajas')
+    fecha_inicio = models.DateField(default=timezone.now, verbose_name="Fecha de inicio")
+    # Al permitir null=True y blank=True, si no se rellena, la baja es "indefinida" (sigue activa)
+    fecha_fin = models.DateField(null=True, blank=True, verbose_name="Fecha de fin",
+                                 help_text="Dejar en blanco si la baja sigue activa")
+    observaciones = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        estado = "Activa" if not self.fecha_fin else f"hasta el {self.fecha_fin.strftime('%d/%m/%Y')}"
+        return f"Baja: {self.profesor.abreviatura} - {estado}"
+
+    @property
+    def esta_activa(self):
+        """Método útil para saber si la baja está operativa en el día actual"""
+        hoy = timezone.now().date()
+        if self.fecha_inicio <= hoy:
+            if self.fecha_fin is None or self.fecha_fin >= hoy:
+                return True
+        return False
+
+
+class SalidaExcursion(models.Model):
+    descripcion = models.CharField(max_length=255, verbose_name="Actividad / Excursión")
+
+    # Fechas por defecto el día actual
+    fecha_inicio = models.DateField(default=timezone.now)
+    fecha_fin = models.DateField(default=timezone.now)
+
+    # Horas por defecto (puedes ajustar el 8:00 y 14:30 a la jornada de tu centro)
+    hora_inicio = models.TimeField(default=time(8, 0))
+    hora_fin = models.TimeField(default=time(21, 30))
+
+    # Relaciones Mucho a Mucho: una excursión tiene varios profes y grupos, y viceversa
+    profesores_acompanantes = models.ManyToManyField(Profesor, related_name='excursiones_asignadas')
+    grupos_implicados = models.ManyToManyField(Grupo, related_name='excursiones_asignadas')
+
+    def __str__(self):
+        return f"{self.descripcion} ({self.fecha_inicio.strftime('%d/%m/%Y')})"

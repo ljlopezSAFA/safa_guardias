@@ -1,13 +1,13 @@
 import csv, io
 
 from django.db import IntegrityError, transaction
-from django.shortcuts import render, redirect
+from django.db.models import Q
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.utils import timezone
 
 from .models import *
-from .forms import CentralImportForm
-
+from .forms import *
 
 # Create your views here.
 def pagina_inicio(request):
@@ -283,3 +283,74 @@ def visor_guardias(request):
         'cuadrante': cuadrante,
         'dias': dias
     })
+
+
+def gestion_ausencias(request):
+    hoy = timezone.now().date()
+
+    # 1. Obtenemos las bajas activas:
+    # Empezaron hoy o antes, Y (no tienen fecha fin O su fecha fin es hoy o posterior)
+    bajas_activas = BajaProfesor.objects.filter(
+        fecha_inicio__lte=hoy
+    ).filter(
+        Q(fecha_fin__isnull=True) | Q(fecha_fin__gte=hoy)
+    ).select_related('profesor')
+
+    # 2. Obtenemos excursiones activas hoy o en el futuro
+    excursiones = SalidaExcursion.objects.filter(
+        fecha_fin__gte=hoy
+    ).prefetch_related('profesores_acompanantes', 'grupos_implicados').order_by('fecha_inicio')
+
+    context = {
+        'bajas_activas': bajas_activas,
+        'excursiones': excursiones,
+    }
+
+    return render(request, 'gestion_ausencias.html', context)
+
+
+
+# --- CRUD PARA BAJAS ---
+def gestionar_baja(request, pk=None):
+    baja = get_object_or_404(BajaProfesor, pk=pk) if pk else None
+    titulo = "Editar Baja de Profesor" if pk else "Registrar Nueva Baja"
+
+    if request.method == 'POST':
+        form = BajaProfesorForm(request.POST, instance=baja)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Baja {'actualizada' if pk else 'registrada'} correctamente.")
+            return redirect('gestion_ausencias')
+    else:
+        form = BajaProfesorForm(instance=baja)
+
+    return render(request, 'formulario_ausencias.html', {'form': form, 'titulo': titulo, 'icono': 'bi-person-dash-fill', 'color': 'danger'})
+
+def eliminar_baja(request, pk):
+    baja = get_object_or_404(BajaProfesor, pk=pk)
+    baja.delete()
+    messages.success(request, "Baja eliminada del sistema.")
+    return redirect('gestion_ausencias')
+
+
+# --- CRUD PARA EXCURSIONES ---
+def gestionar_salida(request, pk=None):
+    salida = get_object_or_404(SalidaExcursion, pk=pk) if pk else None
+    titulo = "Editar Salida/Excursión" if pk else "Programar Nueva Salida"
+
+    if request.method == 'POST':
+        form = SalidaExcursionForm(request.POST, instance=salida)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Excursión {'actualizada' if pk else 'programada'} correctamente.")
+            return redirect('gestion_ausencias')
+    else:
+        form = SalidaExcursionForm(instance=salida)
+
+    return render(request, 'formulario_ausencias.html', {'form': form, 'titulo': titulo, 'icono': 'bi-bus-front-fill', 'color': 'success'})
+
+def eliminar_salida(request, pk):
+    salida = get_object_or_404(SalidaExcursion, pk=pk)
+    salida.delete()
+    messages.success(request, "Salida/Excursión cancelada y eliminada.")
+    return redirect('gestion_ausencias')
