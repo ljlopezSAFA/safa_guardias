@@ -1,0 +1,238 @@
+:root {
+    /* Colores corporativos SAFA */
+    --safa-blue: #0054a6;
+    --safa-light-blue: #e6f0f9;
+    --safa-accent: #f39c12;
+}
+
+body {
+    background-color: #f4f7f6;
+    font-family: 'Segoe UI', Roboto, sans-serif;
+}
+
+.navbar {
+    background-color: white !important;
+    border-bottom: 3px solid var(--safa-blue);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.hero-safa {
+    background: white;
+    padding: 60px 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 40px;
+}
+
+.btn-safa {
+    background-color: var(--safa-blue);
+    color: white;
+    border-radius: 8px;
+    padding: 12px 25px;
+    transition: all 0.3s;
+    text-decoration: none; /* Quita subrayado si es <a> */
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-safa:hover {
+    background-color: #003d7a;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-safa-light {
+    background-color: var(--safa-light-blue);
+    color: var(--safa-blue);
+    border-radius: 8px;
+    padding: 12px 25px;
+    transition: all 0.3s;
+    text-decoration: none; /* Quita subrayado si es <a> */
+    display: inline-block;
+    text-align: center;
+}
+
+.btn-safa-light:hover {
+    background-color: #d1e6f5;
+    color: var(--safa-blue);
+    transform: translateY(-2px);
+}
+
+.card-action {
+    border: none;
+    border-top: 4px solid var(--safa-blue);
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex; /* Necesario para alinear el botón abajo */
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-action:hover {
+    transform: scale(1.03);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.status-badge {
+    background-color: var(--safa-light-blue);
+    color: var(--safa-blue);
+    font-weight: bold;
+    border-radius: 20px;
+    padding: 5px 15px;
+}
+
+
+/* Título con tipografía especial */
+.navbar-title-center {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: -0.5px;
+    color: var(--safa-blue);
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    margin: 0;
+}
+
+/* Ajuste para que la navbar permita el centrado absoluto */
+.navbar > .container {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* En móviles bajamos un poco el tamaño para que no choque con el logo */
+@media (max-width: 768px) {
+    .navbar-title-center {
+        font-size: 1.3rem;
+        /* Si el logo es muy grande, podrías ocultar el título o moverlo */
+    }
+}
+
+/* Clase para iconos con color corporativo */
+.icon-safa {
+    color: var(--safa-blue) !important;
+}
+
+/* Opcional: una versión para el naranja de acento por si quieres resaltar algo */
+.icon-safa-accent {
+    color: var(--safa-accent) !important;
+}
+
+/* Efecto hover para iconos que sean enlaces */
+.icon-safa-hover:hover {
+    color: #003d7a !important;
+    transition: color 0.3s ease;
+}
+
+.card-action:hover .icon-safa {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+    display: inline-block; /* Necesario para que el transform funcione en <i> */
+}
+
+/* Contenedor de notificaciones en la esquina */
+.toast-container-safa {
+    position: fixed;
+    top: 90px; /* Ajusta según el alto de tu navbar */
+    right: 20px;
+    z-index: 1060; /* Por encima de todo */
+    width: 350px;
+    max-width: 90vw;
+}
+
+/* Estilo profesional para la alerta */
+.alert-safa {
+    background-color: white !important;
+    border: none !important;
+    border-radius: 8px !important;
+    border-left: 5px solid transparent !important; /* Borde base */
+    color: #333 !important;
+}
+
+/* Colores de los bordes según el tipo de mensaje */
+.alert-success.alert-safa {
+    border-left-color: #198754 !important; /* Verde Success */
+}
+
+.alert-danger.alert-safa,
+.alert-error.alert-safa {
+    border-left-color: #dc3545 !important; /* Rojo Error */
+}
+
+.alert-info.alert-safa {
+    border-left-color: var(--safa-blue) !important; /* Azul Safa */
+}
+
+.alert-warning.alert-safa {
+    border-left-color: var(--safa-accent) !important; /* Naranja Safa */
+}
+
+
+/* Diseño limpio, moderno y corporativo para la cabecera */
+.dashboard-header {
+    background-color: white;
+    border-left: 8px solid var(--safa-blue);
+    border-radius: 12px;
+}
+
+.clock-time {
+    font-size: 3rem;
+    font-weight: 400;
+    color: var(--safa-blue);
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    letter-spacing: -2px;
+    line-height: 1;
+}
+
+.date-text {
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+/* Estilo para el tramo horario (Badge) */
+.slot-badge {
+    background-color: var(--safa-light-blue);
+    color: var(--safa-blue);
+    border: 1px solid rgba(0, 84, 166, 0.15);
+    padding: 12px 25px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slot-badge.inactive {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    border-color: #dee2e6;
+}
+
+/* Estilos de las listas de profesores */
+.prof-list-item {
+    transition: background-color 0.2s;
+    border-left: 4px solid transparent;
+}
+
+.prof-list-item:hover {
+    background-color: var(--safa-light-blue);
+}
+
+.prof-list-item.guardia {
+    border-left-color: var(--safa-accent);
+}
+
+.prof-list-item.libre {
+    border-left-color: #198754;
+}
+
+.table-panel th {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+}

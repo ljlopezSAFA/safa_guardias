@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="container-fluid py-4">
+    <div class="card shadow-sm border-0 rounded-4">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h4 class="fw-bold mb-0 icon-safa">
+                <i class="bi bi-calendar3 me-2"></i>Cuadrante General de Guardias
+            </h4>
+            <a href="{% url 'index' %}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0 align-middle">
+                    <thead class="bg-light text-center">
+                        <tr>
+                            <th style="width: 150px;" class="py-3">Horario</th>
+                            <th class="py-3 text-primary">Lunes</th>
+                            <th class="py-3 text-primary">Martes</th>
+                            <th class="py-3 text-primary">Miércoles</th>
+                            <th class="py-3 text-primary">Jueves</th>
+                            <th class="py-3 text-primary">Viernes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for fila in cuadrante %}
+                        <tr>
+                            <td class="text-center fw-bold bg-light">
+                                {{ fila.inicio|time:"H:i" }} - {{ fila.fin|time:"H:i" }}
+                            </td>
+                            {% for celda in fila.columnas %}
+                            <td class="p-2" style="min-width: 180px; vertical-align: top;">
+                                {% for guardia in celda %}
+                                <div class="p-2 mb-1 rounded-3 shadow-sm border-start border-4
+                                    {% if 'GU-CO' in guardia.tipo_guardia %}border-warning bg-warning bg-opacity-10
+                                    {% elif 'HC' in guardia.tipo_guardia %}border-info bg-info bg-opacity-10
+                                    {% else %}border-secondary bg-light{% endif %}"
+                                    style="font-size: 0.85rem;">
+                                    <strong>{{ guardia.tipo_guardia }}</strong><br>
+                                    <span class="text-dark">{{ guardia.profesor.apellidos }}, {{ guardia.profesor.nombre|slice:":1" }}.</span>
+                                </div>
+                                {% empty %}
+                                <div class="text-center py-2 text-muted opacity-25">
+                                    <i class="bi bi-slash-circle"></i>
+                                </div>
+                                {% endfor %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

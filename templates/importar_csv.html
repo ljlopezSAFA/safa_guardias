@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+
+{% block body %}
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                    <div class="card-header bg-primary py-4 text-center"
+                         style="background-color: var(--safa-blue) !important;">
+                        <h3 class="text-white fw-bold mb-0">
+                            <i class="bi bi-database-fill-up me-2"></i>Central de Datos
+                        </h3>
+                        <p class="text-white-50 small mb-0 mt-1">Gestión masiva de registros del centro</p>
+                    </div>
+
+                    <div class="card-body p-5">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-secondary">Tipo de información</label>
+                                    {{ form.tipo_dato }}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-bold text-secondary">Archivo CSV</label>
+                                    {{ form.archivo }}
+                                </div>
+
+                                <div class="col-12">
+                                    <hr class="my-4 opacity-25">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="text-muted small">
+                                            <i class="bi bi-info-circle-fill me-1 text-primary"></i>
+                                            Asegúrate de que el archivo sea <strong>UTF-8</strong>.
+                                        </div>
+                                        <button type="submit"
+                                                class="btn btn-safa px-5 py-2 fw-bold shadow-sm rounded-pill">
+                                            Iniciar Importación
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="accordion mt-5 shadow-sm rounded-4 overflow-hidden" id="formatosGuia">
+                    <div class="accordion-item border-0">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed fw-bold bg-white" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#guiaCSV">
+                                <i class="bi bi-filetype-csv me-2 text-success fs-4"></i> Guía de Estructura de Archivos
+                            </button>
+                        </h2>
+                        <div id="guiaCSV" class="accordion-collapse collapse" data-bs-parent="#formatosGuia">
+                            <div class="accordion-body bg-light p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="bg-dark text-white small">
+                                        <tr>
+                                            <th class="ps-4">Modelo</th>
+                                            <th>Columnas del CSV (Orden Estricto)</th>
+                                            <th class="pe-4 text-center">Clave Única</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody class="small text-dark">
+                                        <tr>
+                                            <td class="ps-4"><strong>Profesor</strong></td>
+                                            <td><code>nombre, apellidos, email, abreviatura</code></td>
+                                            <td class="text-center"><span class="badge bg-secondary">Email</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><strong>Aula</strong></td>
+                                            <td><code>nombre, pabellón, abreviatura</code></td>
+                                            <td class="text-center"><span class="badge bg-secondary">Nombre</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><strong>Materia</strong></td>
+                                            <td><code>nombre, abreviatura</code></td>
+                                            <td class="text-center"><span class="badge bg-secondary">Abreviatura</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><strong>Grupo</strong></td>
+                                            <td><code>nombre, curso, etapa</code></td>
+                                            <td class="text-center"><span class="badge bg-secondary">Combinada</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4"><strong>Tramo</strong></td>
+                                            <td><code>hora_inicio, hora_fin, dia_semana (L,M,X,J,V)</code></td>
+                                            <td class="text-center"><span class="badge bg-secondary">Combinada</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4 icon-safa"><strong><i
+                                                    class="bi bi-calendar-event me-2"></i>Horario</strong></td>
+                                            <td><code>día, h_ini, h_fin, materia_abr, prof_abr, aula_abr,
+                                                grupo_nombre</code></td>
+                                            <td class="text-center"><span class="badge bg-danger">Relacional</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-4 icon-safa"><strong><i
+                                                    class="bi bi-shield-check me-2"></i>Guardia</strong></td>
+                                            <td><code>día, h_ini, h_fin, tipo (GU-CO...), prof_abr, prioridad
+                                                (0-9)</code></td>
+                                            <td class="text-center"><span class="badge bg-danger">Relacional</span></td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="p-3 bg-white border-top">
+                                    <p class="mb-0 x-small text-muted italic">
+                                        * La fila de cabecera es obligatoria pero el sistema la ignorará
+                                        automáticamente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

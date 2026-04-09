@@ -4,21 +4,25 @@
 <nav class="navbar navbar-expand-lg navbar-light sticky-top">
     <div class="container">
         <a class="navbar-brand d-flex align-items-center" href="#">
-            <img src="{% static 'images/logo_app.png' %}" alt="Safa Reyes Logo" class="me-2"
-                 style="height: 80px; width: auto;">
-            <span class="fw-bold d-none d-sm-inline" style="color: var(--safa-blue)">Safa Reyes Guardias</span>
+            <img src="{% static 'images/logo_safa.png' %}" alt="Safa Reyes Logo"
+                 style="height: 60px; width: auto;">
         </a>
+
+        <h1 class="navbar-title-center">
+            <a href="{% url 'index' %}">
+                <img src="{% static 'images/logo.png' %}" alt="Safa Reyes Logo"
+                     style="height: 60px; width: auto;">
+            </a>
+        </h1>
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navSafa">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navSafa">
             <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item"><a class="nav-link fw-bold" href="#"><i class="bi bi-clock-history"></i>
-                    Horarios</a></li>
-                <li class="nav-item"><a class="nav-link fw-bold" href="#"><i class="bi bi-bus-front"></i> Salidas</a>
-                </li>
-                <li class="nav-item ms-lg-3">
-                    <span class="status-badge">Sesión: Jefatura de Estudios</span>
+                <li class="nav-item">
+                    <span class="status-badge">Sesión: Jefatura</span>
                 </li>
             </ul>
         </div>

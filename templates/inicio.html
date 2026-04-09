@@ -1,96 +1,203 @@
 {% extends 'base.html' %}
 
 {% block body %}
+    <main class="container py-4">
 
+        <div class="dashboard-header p-4 mb-5 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
+            <div class="d-flex flex-column align-items-center align-items-md-start mb-4 mb-md-0">
+                <div class="clock-time" id="realtime-clock">--:--:--</div>
+                <div class="fs-5 date-text mt-2" id="realtime-date">Cargando fecha...</div>
+            </div>
 
-    <!-- Panel de Control Principal -->
-<main class="container mb-5">
-    <div class="row g-4">
-        <!-- Columna de Gestión Automática -->
-        <div class="col-md-4">
-            <div class="card h-100 card-action shadow-sm p-4">
-                <div class="text-center mb-3">
-                    <i class="bi bi-cpu fs-1 text-primary"></i>
-                </div>
-                <h4 class="text-center">Profesorado</h4>
-                <p class="text-muted text-center small">Información sobre los docentes</p>
-                <a href="{% url 'mostrar_profesores' %}">
-                    <button class="btn btn-safa mt-auto">Ver Profesorado</button>
-                </a>
+            <div class="text-center text-md-end">
+                <p class="mb-2 text-muted text-uppercase small fw-bold">Tramo Horario Actual</p>
+
+                {% if tramo_actual %}
+                    <div class="slot-badge shadow-sm">
+                        <i class="bi bi-clock-history fs-5"></i>
+                        {{ tramo_actual.hora_inicio|time:"H:i" }} - {{ tramo_actual.hora_fin|time:"H:i" }}
+                    </div>
+                {% else %}
+                    <div class="slot-badge inactive shadow-sm">
+                        <i class="bi bi-cup-hot fs-5"></i>
+                        Fuera de horario lectivo
+                    </div>
+                {% endif %}
             </div>
         </div>
 
-        <!-- Columna de Horarios de Grupos -->
-        <div class="col-md-4">
-            <div class="card h-100 card-action shadow-sm p-4">
-                <div class="text-center mb-3">
-                    <i class="bi bi-table fs-1 text-primary"></i>
+        <div class="row g-4 mb-5">
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-action shadow-sm p-4">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-people fs-1 icon-safa"></i>
+                    </div>
+                    <h5 class="text-center fw-bold">Profesorado</h5>
+                    <p class="text-muted text-center small mb-4">Información detallada sobre el cuerpo docente y
+                        perfiles.</p>
+                    <a href="{% url 'mostrar_profesores' %}" class="btn-safa w-100 mt-auto">Ver Profesores</a>
                 </div>
-                <h4 class="text-center">Horarios de Grupos</h4>
-                <p class="text-muted text-center small">Consulta dónde debería estar cada grupo y qué docente les
-                    imparte clase en este tramo horario.</p>
-                <a href="{% url 'mostrar_aulas' %}">
-                    <button class="btn btn-safa mt-auto">Ver Aulas</button>
-                </a>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-action shadow-sm p-4">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-table fs-1 icon-safa"></i>
+                    </div>
+                    <h5 class="text-center fw-bold">Horarios</h5>
+                    <p class="text-muted text-center small mb-4">Consulta la ubicación de grupos y docentes.</p>
+                    <a href="{% url 'visor_horarios' %}" class="btn-safa w-100 mt-auto">Ver Horarios</a>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-action shadow-sm p-4">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-backpack3 fs-1 icon-safa"></i>
+                    </div>
+                    <h5 class="text-center fw-bold">Salidas</h5>
+                    <p class="text-muted text-center small mb-4">Registro de actividades y ausencias programadas.</p>
+                    <a href="#" class="btn-safa w-100 mt-auto">Gestionar</a>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-md-6">
+                <div class="card card-action shadow-sm p-4">
+                    <div class="text-center mb-3">
+                        <i class="bi bi-database-fill-up fs-1 icon-safa"></i>
+                    </div>
+                    <h5 class="text-center fw-bold">Datos y Carga</h5>
+                    <p class="text-muted text-center small mb-4">Carga masiva de CSV (Profesores, Aulas, Horarios).</p>
+                    <a href="{% url 'central_importar' %}" class="btn-safa-light w-100 mt-auto fw-bold">Cargar Datos</a>
+                </div>
             </div>
         </div>
 
-        <!-- Columna de Salidas y Excursiones -->
-        <div class="col-md-4">
-            <div class="card h-100 card-action shadow-sm p-4">
-                <div class="text-center mb-3">
-                    <i class="bi bi-geo-alt fs-1 text-primary"></i>
+        <div class="row g-4">
+
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+                        <h5 class="fw-bold mb-0">
+                            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Grupos sin profesor
+                        </h5>
+                        <span class="badge bg-danger rounded-pill px-3">2 Pendientes</span>
+                    </div>
+                    <div class="card-body px-4 pt-3">
+                        <p class="text-muted small mb-3">Grupos detectados sin docente en el tramo actual.</p>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle table-panel">
+                                <thead class="table-light">
+                                <tr>
+                                    <th>Profesor/a Ausente</th>
+                                    <th>Grupo afectado</th>
+                                    <th>Aula</th>
+                                    <th>Estado</th>
+                                    <th class="text-end">Acción</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr>
+                                    <td class="fw-bold text-dark">García López, Manuel</td>
+                                    <td>2º Bachillerato A</td>
+                                    <td><i class="bi bi-door-open text-muted"></i> B-104</td>
+                                    <td><span
+                                            class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill">Pendiente</span>
+                                    </td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-safa px-3 shadow-sm">Asignar Guardia</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold text-dark">Rodríguez Sanz, Ana</td>
+                                    <td>1º ESO C</td>
+                                    <td><i class="bi bi-door-open text-muted"></i> C-02</td>
+                                    <td><span class="status-badge border border-primary"><i
+                                            class="bi bi-check2-circle"></i> Pérez, J.</span></td>
+                                    <td class="text-end">
+                                        <button class="btn btn-sm btn-safa-light border px-3">Detalles</button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-                <h4 class="text-center">Salidas Escolares</h4>
-                <p class="text-muted text-center small">Registro de actividades fuera del centro para prever ausencias
-                    programadas de larga duración.</p>
-                <button class="btn btn-outline-secondary mt-auto">Gestionar Salidas</button>
             </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm rounded-4 h-100">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                        <h5 class="fw-bold mb-0 icon-safa">
+                            <i class="bi bi-person-badge me-2"></i>Disponibilidad
+                        </h5>
+                        <p class="text-muted small mt-1 mb-0">Personal de guardia en este tramo</p>
+                    </div>
+                    <div class="card-body p-0 mt-3">
+                        <div class="list-group list-group-flush border-top">
+
+                            {% for guardia in profes_de_guardia %}
+                                <div class="list-group-item border-0 p-3 prof-list-item guardia d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center">
+                                        <div class="rounded-circle bg-warning bg-opacity-10 text-warning d-flex align-items-center justify-content-center me-3"
+                                             style="width: 40px; height: 40px;">
+                                            <i class="bi bi-shield-fill-check"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">{{ guardia.profesor.apellidos }}, {{ guardia.profesor.nombre }}</h6>
+                                            <small class="text-muted">{{ guardia.tipo_guardia }}</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-warning text-dark rounded-pill">En el centro</span>
+                                </div>
+                            {% empty %}
+                                <div class="p-4 text-center text-muted">
+                                    <i class="bi bi-info-circle d-block fs-2 mb-2"></i>
+                                    No hay guardias registradas para este tramo.
+                                </div>
+                            {% endfor %}
+
+                        </div>
+                        {% if profes_de_guardia %}
+                            <div class="p-3 text-center bg-light mt-auto">
+                                <a href="{% url 'visor_guardias' %}"
+                                   class="text-decoration-none small fw-bold icon-safa">
+                                    Ver cuadrante completo <i class="bi bi-arrow-right"></i>
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
         </div>
-    </div>
 
-    <!-- Tabla Rápida de Profesores Ausentes (Ejemplo) -->
-    <div class="mt-5 bg-white p-4 rounded-4 shadow-sm">
-        <h5 class="mb-4 fw-bold"><i class="bi bi-person-x-fill text-danger"></i> Ausencias Detectadas (Tramo Actual)
-        </h5>
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead class="table-light">
-                <tr>
-                    <th>Profesor/a</th>
-                    <th>Grupo afectado</th>
-                    <th>Aula</th>
-                    <th>Estado Guardia</th>
-                    <th>Acción</th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr>
-                    <td>García López, Manuel</td>
-                    <td>2º Bachillerato A</td>
-                    <td>B-104</td>
-                    <td><span class="badge bg-danger">Pendiente</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary">Asignar ahora</button>
-                    </td>
-                </tr>
-                <tr>
-                    <td>Rodríguez Sanz, Ana</td>
-                    <td>1º ESO C</td>
-                    <td>C-02</td>
-                    <td><span class="badge bg-success">Asignada (Pérez, J.)</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-light">Ver detalles</button>
-                    </td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</main>
+    </main>
 
+    <script>
+        // Recibimos la hora exacta del servidor desde Django
+        // Si por algún motivo no llega (ej: desarrollo), usamos la del PC local por defecto.
+        let serverTime = new Date("{% if hora_servidor_iso %}{{ hora_servidor_iso }}{% else %}{{ '' }}{% endif %}");
+        if (isNaN(serverTime.getTime())) {
+            serverTime = new Date();
+        }
 
+        function updateClock() {
+            // Le sumamos 1 segundo a la hora del servidor en cada iteración
+            serverTime.setSeconds(serverTime.getSeconds() + 1);
 
+            // Formato de hora (Ej: 10:45:30)
+            const timeOptions = {hour: '2-digit', minute: '2-digit', second: '2-digit'};
+            document.getElementById('realtime-clock').textContent = serverTime.toLocaleTimeString('es-ES', timeOptions);
 
+            // Formato de fecha (Ej: jueves, 15 de marzo de 2024)
+            const dateOptions = {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'};
+            document.getElementById('realtime-date').textContent = serverTime.toLocaleDateString('es-ES', dateOptions);
+        }
 
+        // Llamada inicial
+        updateClock();
+        // Bucle que ejecuta la función cada 1000ms (1 segundo)
+        setInterval(updateClock, 1000);
+    </script>
 {% endblock %}
