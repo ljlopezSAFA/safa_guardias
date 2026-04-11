@@ -6,13 +6,27 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h3 class="fw-bold mb-1 icon-safa">
-                <i class="bi bi-calendar2-x me-2"></i>Gestión de Ausencias y Salidas
+                <i class="bi bi-calendar2-week me-2"></i>Gestión de Ausencias y Salidas
             </h3>
-            <p class="text-muted mb-0">Control de bajas, permisos por horas y excursiones</p>
+            <p class="text-muted mb-0">Visión semanal de bajas, permisos por horas y excursiones</p>
         </div>
         <a href="{% url 'index' %}" class="btn btn-outline-secondary rounded-pill px-4 shadow-sm">
             <i class="bi bi-arrow-left me-2"></i>Volver al Inicio
         </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-white">
+        <div class="card-body py-2 px-4 d-flex justify-content-between align-items-center">
+            <a href="?date={{ semana_anterior }}" class="btn btn-light rounded-pill px-3 text-primary shadow-sm border">
+                <i class="bi bi-chevron-left me-1"></i> Sem. Anterior
+            </a>
+            <h5 class="fw-bold mb-0 text-center" style="color: var(--safa-blue);">
+                Semana del {{ lunes|date:"d M" }} al {{ domingo|date:"d M" }}
+            </h5>
+            <a href="?date={{ semana_siguiente }}" class="btn btn-light rounded-pill px-3 text-primary shadow-sm border">
+                Sem. Siguiente <i class="bi bi-chevron-right ms-1"></i>
+            </a>
+        </div>
     </div>
 
     <div class="row g-4">
@@ -35,7 +49,7 @@
 
                 <div class="card-body p-0">
                     <div class="bg-light px-4 py-2 border-top border-bottom">
-                        <small class="fw-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Bajas de larga duración</small>
+                        <small class="fw-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Bajas activas esta semana</small>
                     </div>
                     <div class="list-group list-group-flush">
                         {% for baja in bajas_activas %}
@@ -63,20 +77,23 @@
                                 </div>
                             </div>
                         {% empty %}
-                            <p class="text-center text-muted small py-3 mb-0">No hay bajas de larga duración.</p>
+                            <p class="text-center text-muted small py-3 mb-0">No hay bajas de larga duración registradas.</p>
                         {% endfor %}
                     </div>
 
                     <div class="bg-light px-4 py-2 border-top border-bottom">
-                        <small class="fw-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Ausencias por horas (Hoy)</small>
+                        <small class="fw-bold text-muted text-uppercase small" style="letter-spacing: 1px;">Ausencias por horas (Semana)</small>
                     </div>
                     <div class="list-group list-group-flush">
-                        {% for aus in ausencias_hoy %}
+                        {% for aus in ausencias_semana %}
                             <div class="list-group-item border-0 px-4 py-3 border-bottom" style="background-color: #fef9e7;">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
-                                        <div class="me-3">
-                                            <span class="badge btn-safa-warning py-1 px-2" style="font-size: 0.7rem;">
+                                        <div class="me-3 text-center">
+                                            <span class="badge btn-safa-warning py-1 px-2 mb-1 d-block" style="font-size: 0.7rem;">
+                                                {{ aus.fecha|date:"D d" }}
+                                            </span>
+                                            <span class="text-muted fw-bold d-block" style="font-size: 0.65rem;">
                                                 {{ aus.hora_inicio|time:"H:i" }} - {{ aus.hora_fin|time:"H:i" }}
                                             </span>
                                         </div>
@@ -96,7 +113,7 @@
                                 </div>
                             </div>
                         {% empty %}
-                            <p class="text-center text-muted small py-3 mb-0">No hay ausencias cortas para hoy.</p>
+                            <p class="text-center text-muted small py-3 mb-0">No hay ausencias cortas para esta semana.</p>
                         {% endfor %}
                     </div>
                 </div>
@@ -160,7 +177,7 @@
                                 {% empty %}
                                 <tr>
                                     <td colspan="4" class="text-center py-5 text-muted small">
-                                        No hay salidas programadas.
+                                        No hay salidas programadas para esta semana.
                                     </td>
                                 </tr>
                                 {% endfor %}

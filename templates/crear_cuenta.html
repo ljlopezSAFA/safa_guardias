@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            
+            <div class="mb-4">
+                <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-person-plus-fill text-primary me-2"></i>Gestor de Cuentas de Acceso</h3>
+                <p class="text-muted small">Crea usuarios del sistema y vincúlalos a su ficha de Profesor.</p>
+            </div>
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-body p-4 p-md-5 bg-white">
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+
+                        <h5 class="fw-bold mb-3 pb-2 border-bottom text-secondary">1. Credenciales de Acceso</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small">Usuario <span class="text-danger">*</span></label>
+                                {{ form.username }}
+                                {% if form.username.errors %}<div class="text-danger small mt-1">{{ form.username.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small">Email <span class="text-danger">*</span></label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold small">Contraseña temporal <span class="text-danger">*</span></label>
+                                {{ form.password }}
+                                {% if form.password.errors %}<div class="text-danger small mt-1">{{ form.password.errors.0 }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold mb-3 pb-2 border-bottom text-secondary mt-5">2. Vinculación de Perfil</h5>
+                        
+                        <div class="mb-4 d-flex gap-4 p-3 bg-light rounded-3 border">
+                            {% for radio in form.tipo %}
+                                <div class="form-check cursor-pointer">
+                                    {{ radio.tag }}
+                                    <label class="form-check-label fw-bold cursor-pointer" for="{{ radio.id_for_label }}">
+                                        {{ radio.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <div id="seccion_existente" class="p-4 bg-primary bg-opacity-10 rounded-3 border border-primary border-opacity-25 mb-4" style="display: none;">
+                            <label class="form-label fw-bold text-primary"><i class="bi bi-link-45deg me-1"></i>Selecciona un perfil huérfano (sin cuenta actual)</label>
+                            {{ form.profesor_existente }}
+                            {% if form.profesor_existente.errors %}<div class="text-danger small mt-1">{{ form.profesor_existente.errors.0 }}</div>{% endif %}
+                            <p class="small text-muted mt-2 mb-0"><i class="bi bi-info-circle me-1"></i>Si el profesor no aparece, significa que no ha sido importado o ya tiene un usuario vinculado.</p>
+                        </div>
+
+                        <div id="seccion_nuevo" class="p-4 bg-success bg-opacity-10 rounded-3 border border-success border-opacity-25 mb-4">
+                            <h6 class="fw-bold text-success mb-3"><i class="bi bi-person-vcard me-1"></i>Datos del Nuevo Perfil</h6>
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Nombre</label>
+                                    {{ form.nombre }}
+                                    {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Apellidos</label>
+                                    {{ form.apellidos }}
+                                    {% if form.apellidos.errors %}<div class="text-danger small mt-1">{{ form.apellidos.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold">Abreviatura (ej. JPG)</label>
+                                    {{ form.abreviatura }}
+                                    {% if form.abreviatura.errors %}<div class="text-danger small mt-1">{{ form.abreviatura.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Centro Destino</label>
+                                    {{ form.centro }}
+                                    {% if form.centro.errors %}<div class="text-danger small mt-1">{{ form.centro.errors.0 }}</div>{% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold">Permisos / Rol</label>
+                                    {{ form.rol }}
+                                    {% if form.rol.errors %}<div class="text-danger small mt-1">{{ form.rol.errors.0 }}</div>{% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary btn-lg shadow-sm fw-bold">
+                                <i class="bi bi-save me-2"></i> Procesar Alta en el Sistema
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const radios = document.querySelectorAll('input[name="tipo"]');
+    const seccionNuevo = document.getElementById("seccion_nuevo");
+    const seccionExistente = document.getElementById("seccion_existente");
+
+    function actualizarVistas() {
+        // Encontrar cuál está checkeado
+        let seleccionado = document.querySelector('input[name="tipo"]:checked').value;
+        
+        if (seleccionado === 'nuevo') {
+            seccionNuevo.style.display = 'block';
+            seccionExistente.style.display = 'none';
+        } else {
+            seccionNuevo.style.display = 'none';
+            seccionExistente.style.display = 'block';
+        }
+    }
+
+    // Escuchar cambios
+    radios.forEach(radio => {
+        radio.addEventListener('change', actualizarVistas);
+    });
+
+    // Ejecutar al cargar por si recarga la página con errores
+    actualizarVistas();
+});
+</script>
+{% endblock %}

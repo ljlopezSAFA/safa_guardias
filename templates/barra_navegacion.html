@@ -1,30 +1,98 @@
 {% load static %}
 
-<!-- Navbar con Logo Oficial -->
-<nav class="navbar navbar-expand-lg navbar-light sticky-top">
+<nav class="navbar navbar-expand-lg navbar-light sticky-top py-2">
     <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="#">
-            <img src="{% static 'images/logo_safa.png' %}" alt="Safa Reyes Logo"
-                 style="height: 60px; width: auto;">
+        <a class="navbar-brand" href="{% url 'index' %}">
+            <img src="{% static 'images/logo_safa.png' %}" alt="Logo SAFA" style="height: 45px; width: auto;">
         </a>
 
-        <h1 class="navbar-title-center">
+        <div class="navbar-title-center d-none d-md-block">
             <a href="{% url 'index' %}">
-                <img src="{% static 'images/logo.png' %}" alt="Safa Reyes Logo"
-                     style="height: 60px; width: auto;">
+                <img src="{% static 'images/logo.png' %}" alt="Logo App" style="height: 80px; width: auto;">
             </a>
-        </h1>
+        </div>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navSafa">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+        <div class="ms-auto d-flex align-items-center">
+            {% if user.is_authenticated %}
+                <div class="dropdown">
+                    <button class="btn btn-light border-0 d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm"
+                            type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
 
-        <div class="collapse navbar-collapse" id="navSafa">
-            <ul class="navbar-nav ms-auto align-items-center">
-                <li class="nav-item">
-                    <span class="status-badge">Sesión: Jefatura</span>
-                </li>
-            </ul>
+                        <div class="icon-safa text-white rounded-circle d-flex align-items-center justify-content-center"
+                             style="width: 32px; height: 32px;">
+                            <i class="bi bi-person-fill"></i>
+                        </div>
+
+                        <div class="text-start d-none d-sm-block">
+                            <div class="fw-bold"
+                                 style="font-size: 0.75rem; line-height: 1;">{{ user.perfil_profesor.nombre }}</div>
+                            <div class="text-muted"
+                                 style="font-size: 0.65rem;">{{ user.perfil_profesor.get_rol_display }}</div>
+                        </div>
+
+                        <i class="bi bi-chevron-down small text-muted"></i>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3"
+                        aria-labelledby="userMenu">
+
+                        <li class="px-3 py-2 border-bottom mb-2 bg-light rounded-top" onclick="event.stopPropagation();">
+                            <div class="fw-bold small text-dark mb-1">
+                                <i class="icon-safa bi bi-building me-2"></i>Centro
+                            </div>
+
+                            {% if lista_centros_admin %}
+                                <form method="POST" action="{% url 'cambiar_centro_sesion' %}">
+                                    {% csrf_token %}
+                                    <select name="centro_id" class="form-select form-select-sm text-muted" onchange="this.form.submit()" style="font-size: 0.8rem; min-width: 180px;">
+                                        <option value="">Mi centro por defecto</option>
+                                        {% for c in lista_centros_admin %}
+                                            <option value="{{ c.id }}" {% if centro_activo_admin and centro_activo_admin.id == c.id %}selected{% endif %}>
+                                                {{ c.nombre }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            {% else %}
+                                <div class="small text-muted text-truncate" style="max-width: 180px;">
+                                    {{ user.perfil_profesor.centro.nombre|default:"Sin centro asignado" }}
+                                </div>
+                            {% endif %}
+                        </li>
+                        {% if user.is_superuser or user.perfil_profesor.rol == 'ADMIN' %}
+                            <li>
+                                <a class="dropdown-item small py-2 fw-semibold text-dark"
+                                   href="{% url 'crear_cuenta_usuario' %}">
+                                    <i class="bi bi-people-fill text-primary me-2"></i> Gestor de Cuentas
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item small py-2 fw-semibold text-dark"
+                                   href="{% url 'central_importar' %}"> <i
+                                        class="bi bi-database-fill-up text-success me-2"></i> Central de Datos
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        <li>
+                            <hr class="dropdown-divider">
+                        </li>
+
+                        <li>
+                            <form method="post" action="{% url 'logout' %}" class="px-2">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item rounded-2 text-danger small py-2">
+                                    <i class="bi bi-box-arrow-right me-2"></i> Cerrar Sesión
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-safa btn-sm rounded-pill px-4">
+                    <i class="bi bi-person-circle me-1"></i> Acceder
+                </a>
+            {% endif %}
         </div>
     </div>
 </nav>

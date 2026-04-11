@@ -6,6 +6,12 @@
     --safa-success: #28a745;
     --safa-warning: #ffc107;
     --safa-danger: #dc3545;
+
+
+
+    --bs-primary: var(--safa-blue);
+   --bs-primary-rgb: 0, 84, 166;
+    --bs-primary-border-subtle: var(--safa-light-blue);
 }
 
 body {
@@ -300,7 +306,8 @@ body {
     color: #6c757d;
 
 
-/* Personalización "SAFA Style" para los buscadores */
+    /* Personalización "SAFA Style" para los buscadores */
+
     .ts-control {
         border-radius: 8px !important;
         padding: 10px !important;
@@ -308,9 +315,10 @@ body {
     }
 
     /* Los "Chips" (elementos seleccionados) */
+
     .ts-control .item {
         background-color: #e6f0f9 !important; /* Azul pastel */
-        color: var(--safa-blue) !important;   /* Azul intenso */
+        color: var(--safa-blue) !important; /* Azul intenso */
         border: 1px solid var(--safa-blue) !important;
         border-radius: 6px !important;
         padding: 2px 10px !important;
@@ -318,13 +326,68 @@ body {
     }
 
     /* La "X" para eliminar el chip */
+
     .ts-control .item .remove {
         border-left: 1px solid var(--safa-blue) !important;
         color: var(--safa-blue) !important;
     }
 
     /* Cuando el buscador está enfocado */
+
     .focus .ts-control {
         border-color: var(--safa-blue) !important;
         box-shadow: 0 0 0 0.25 margin rgba(0, 84, 166, 0.1) !important;
-    }}
+    }
+}
+
+/* --- PERSONALIZACIÓN DE FORMULARIOS SAFA --- */
+
+/* Radio y Checkbox: Color cuando están marcados */
+.form-check-input:checked {
+    background-color: var(--safa-blue);
+    border-color: var(--safa-blue);
+}
+
+/* Color del anillo de enfoque (focus) para todos los inputs */
+.form-check-input:focus,
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--safa-blue);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(0, 84, 166, 0.25); /* Azul SAFA con transparencia */
+}
+
+/* Estilo específico para interruptores (switches) si los usas */
+.form-check-inline .form-check-input {
+    cursor: pointer;
+}
+
+/* Modificar el color de los radio buttons cuando NO están marcados pero tienen hover (opcional) */
+.form-check-input:hover {
+    border-color: var(--safa-blue);
+}
+
+/* Estilo para los Inputs tipo Rango (si los hubiera) */
+.form-range::-webkit-slider-thumb {
+    background-color: var(--safa-blue);
+}
+.form-range::-webkit-slider-thumb:active {
+    background-color: var(--safa-light-blue);
+}
+
+
+.btn-primary {
+    --bs-btn-bg: var(--safa-blue);
+    --bs-btn-border-color: var(--safa-blue);
+    --bs-btn-hover-bg: #003d7a;
+    --bs-btn-hover-border-color: #003d7a;
+    --bs-btn-active-bg: #003d7a;
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);0
+}
+
+a {
+    color: var(--safa-blue);
+}
+a:hover {
+    color: #003d7a;
+}

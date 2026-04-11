@@ -1,12 +1,11 @@
 from django.urls import path
-
+from django.contrib.auth import views as auth_views
 from . import views
 
 urlpatterns = [
     path("", views.pagina_inicio, name="index"),
     path("profesores/", views.ver_profesores, name="mostrar_profesores"),
     path("horarios/", views.visor_horarios, name="visor_horarios"),
-    path('importar/', views.central_importar_csv, name='central_importar'),
     path('guardias/', views.visor_guardias, name='visor_guardias'),
 
     # Gestión Principal
@@ -32,5 +31,21 @@ urlpatterns = [
 
     # Ruta para asignar (la que pusimos en el botón del dashboard)
     path('asignar-guardia/<int:registro_id>/', views.asignar_guardia, name='asignar_guardia'),
+
+    path('login/', auth_views.LoginView.as_view(template_name='login.html', redirect_authenticated_user=True),
+         name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+
+    path('centro_datos/plantilla/<str:tipo>/', views.descargar_plantilla_csv, name='descargar_plantilla'),
+
+    path('crear-cuenta/', views.crear_cuenta_usuario, name='crear_cuenta_usuario'),
+
+    path('cambiar-centro/', views.cambiar_centro_sesion, name='cambiar_centro_sesion'),
+
+    path('centro-datos/', views.panel_central_datos, name='centro_datos'),
+
+    path('centro-datos/tramos/generar/', views.generar_tramos_masivos, name='generar_tramos'),
+
+    path('centro-datos/importar/', views.central_importar, name='central_importar'),
 
 ]

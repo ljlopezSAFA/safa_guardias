@@ -32,9 +32,18 @@
                                 </span>
                             </span>
                             </li>
+
                             <li class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center border-bottom">
                                 <span class="text-muted small text-uppercase fw-bold">Profesor/a Ausente</span>
-                                <span class="fw-bold fs-5 text-dark">{{ registro.profesor_ausente.apellidos }}, {{ registro.profesor_ausente.nombre }}</span>
+                                <div class="text-end">
+                                    <span class="fw-bold fs-5 text-dark d-block">{{ registro.profesor_ausente.apellidos }}, {{ registro.profesor_ausente.nombre }}</span>
+                                    {% if registro.motivo_ausencia %}
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 mt-1"
+                                              style="font-size: 0.70rem; font-weight: 500;">
+                                            <i class="bi bi-info-circle me-1"></i>{{ registro.motivo_ausencia }}
+                                        </span>
+                                    {% endif %}
+                                </div>
                             </li>
                             <li class="list-group-item px-0 py-3 d-flex justify-content-between align-items-center border-bottom">
                                 <span class="text-muted small text-uppercase fw-bold">Grupo Afectado</span>
@@ -82,23 +91,36 @@
                                                         </h6>
 
                                                         <div class="d-flex flex-wrap gap-1 mt-1">
+
+                                                            {% if profe.motivo_disponibilidad == 'LIBERADO' %}
+                                                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary fw-semibold shadow-sm"
+                                                                      style="font-size: 0.7rem;">
+            <i class="bi bi-bus-front-fill me-1"></i> Grupo de Excursión
+        </span>
+                                                            {% elif profe.motivo_disponibilidad == 'GUARDIA' %}
+                                                                <span class="badge fw-semibold shadow-sm"
+                                                                      style="font-size: 0.7rem; background-color: rgba(111, 66, 193, 0.1); color: #6f42c1; border: 1px solid #6f42c1;">
+            <i class="bi bi-shield-check me-1"></i> Hora de Guardia
+        </span>
+                                                            {% endif %}
+
                                                             {% if profe.conoce_grupo %}
                                                                 <span class="badge bg-success bg-opacity-10 text-success border border-success fw-semibold"
                                                                       style="font-size: 0.7rem;">
-                    <i class="bi bi-star-fill me-1"></i> {{ profe.horas_grupo }}h con este grupo
-                </span>
+            <i class="bi bi-star-fill me-1"></i> {{ profe.horas_grupo }}h con este grupo
+        </span>
                                                             {% else %}
                                                                 <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary fw-semibold"
                                                                       style="font-size: 0.7rem;">
-                    <i class="bi bi-person-dash me-1"></i> No le da a este grupo
-                </span>
+            <i class="bi bi-person-dash me-1"></i> No le da a este grupo
+        </span>
                                                             {% endif %}
 
                                                             {% if profe.misma_etapa %}
                                                                 <span class="badge bg-info bg-opacity-10 text-info border border-info fw-semibold"
                                                                       style="font-size: 0.7rem;">
-                    <i class="bi bi-diagram-3-fill me-1"></i> Docente de {{ registro.grupo.get_etapa_display }}
-                </span>
+            <i class="bi bi-diagram-3-fill me-1"></i> Docente de {{ registro.grupo.get_etapa_display }}
+        </span>
                                                             {% endif %}
                                                         </div>
                                                     </div>

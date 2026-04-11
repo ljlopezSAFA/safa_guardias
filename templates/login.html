@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block body %}
+    <style>
+        .navbar {
+            display: none !important;
+        }
+
+        body {
+            background-color: #f4f7f6;
+        }
+    </style>
+
+    <div class="container d-flex align-items-center justify-content-center" style="min-height: 100vh;">
+        <div class="row w-100 justify-content-center">
+            <div class="col-12 col-md-6 col-lg-4">
+
+                <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
+                    <div class="bg-white text-center pt-5 pb-3">
+                        <img src="{% static 'images/logo.png' %}" alt="Safa Reyes Logo"
+                             style="height: 80px; width: auto;">
+                    </div>
+
+                    <div class="card-body p-4 bg-white">
+                        {% if form.errors %}
+                            <div class="alert alert-danger alert-safa small p-2 mb-4 text-center">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>Usuario o contraseña incorrectos.
+                            </div>
+                        {% endif %}
+
+                        <form method="post" action="{% url 'login' %}">
+                            {% csrf_token %}
+
+                            <div class="mb-4">
+                                <label for="id_username"
+                                       class="form-label small fw-bold text-muted mb-1">USUARIO</label>
+                                <div class="input-group shadow-sm rounded-3">
+                                <span class="input-group-text bg-white border-end-0 text-muted">
+                                    <i class="bi bi-person"></i>
+                                </span>
+                                    <input type="text" name="username" class="form-control border-start-0 py-2 ps-0"
+                                           id="id_username" placeholder="Introduce tu usuario" required autofocus>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="id_password"
+                                       class="form-label small fw-bold text-muted mb-1">CONTRASEÑA</label>
+                                <div class="input-group shadow-sm rounded-3">
+                                <span class="input-group-text bg-white border-end-0 text-muted">
+                                    <i class="bi bi-key"></i>
+                                </span>
+                                    <input type="password" name="password" class="form-control border-start-0 py-2 ps-0"
+                                           id="id_password" placeholder="••••••••" required>
+                                </div>
+                            </div>
+
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-safa py-2 fw-bold fs-5 shadow-sm">
+                                    Entrar <i class="bi bi-box-arrow-in-right ms-2"></i>
+                                </button>
+                            </div>
+
+                            <input type="hidden" name="next" value="{{ next }}">
+                        </form>
+                    </div>
+
+                    <div class="card-footer bg-light border-0 text-center py-3">
+                    <span class="text-muted small">
+                        ¿Problemas para acceder? Contacta con Jefatura o el Administrador.
+                    </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+{% endblock %}

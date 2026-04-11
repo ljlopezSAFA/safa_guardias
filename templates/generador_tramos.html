@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'centro_datos' %}">Central de Datos</a></li>
+            <li class="breadcrumb-item active">Generar Tramos</li>
+        </ol>
+    </nav>
+
+    <div class="card border-0 shadow-sm mx-auto" style="max-width: 600px;">
+        <div class="card-header bg-info text-white p-3">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Configurar Jornada</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="POST">
+                {% csrf_token %}
+                <div class="row g-3">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">Inicio Jornada</label>
+                        {{ form.hora_inicio_jornada }}
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">Fin Jornada</label>
+                        {{ form.hora_fin_jornada }}
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label fw-semibold">Duración Clase (minutos)</label>
+                        {{ form.duracion_minutos }}
+                    </div>
+                    <div class="col-12 bg-light p-3 rounded">
+                        <p class="fw-bold small mb-2 text-uppercase text-secondary">Horario de Recreo</p>
+                        <div class="row">
+                            <div class="col-6">
+                                <label class="form-label small">Inicio Recreo</label>
+                                {{ form.hora_inicio_recreo }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small">Fin Recreo</label>
+                                {{ form.hora_fin_recreo }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="form-check form-switch p-0 ms-4">
+                            {{ form.borrar_anteriores }}
+                            <label class="form-check-label text-danger fw-bold ms-2">Limpiar tramos existentes</label>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-info text-white w-100 rounded-pill btn-lg mt-4 shadow-sm">
+                    Generar Semana Completa
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

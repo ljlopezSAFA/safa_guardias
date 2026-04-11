@@ -28,19 +28,18 @@
 
         <div class="row g-4 mb-5">
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4">
+                <div class="card card-action shadow-sm p-4 h-100">
                     <div class="text-center mb-3">
                         <i class="bi bi-people fs-1 icon-safa"></i>
                     </div>
                     <h5 class="text-center fw-bold">Profesorado</h5>
-                    <p class="text-muted text-center small mb-4">Información detallada sobre el cuerpo docente y
-                        perfiles.</p>
+                    <p class="text-muted text-center small mb-4">Información detallada sobre el cuerpo docente y perfiles.</p>
                     <a href="{% url 'mostrar_profesores' %}" class="btn-safa w-100 mt-auto">Ver Profesores</a>
                 </div>
             </div>
 
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4">
+                <div class="card card-action shadow-sm p-4 h-100">
                     <div class="text-center mb-3">
                         <i class="bi bi-table fs-1 icon-safa"></i>
                     </div>
@@ -51,7 +50,7 @@
             </div>
 
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4">
+                <div class="card card-action shadow-sm p-4 h-100">
                     <div class="text-center mb-3">
                         <div class="d-flex justify-content-center gap-2">
                             <i class="bi bi-bus-front-fill fs-1 icon-safa"></i>
@@ -59,20 +58,19 @@
                         </div>
                     </div>
                     <h5 class="text-center fw-bold">Excursiones y Ausencias</h5>
-                    <p class="text-muted text-center small mb-4">Gestiona las excursiones y la ausencia del
-                        profesorado.</p>
+                    <p class="text-muted text-center small mb-4">Gestiona las excursiones y la ausencia del profesorado.</p>
                     <a href="{% url 'gestion_ausencias' %}" class="btn-safa w-100 mt-auto">Gestionar Ausencias</a>
                 </div>
             </div>
 
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4">
+                <div class="card card-action shadow-sm p-4 h-100 border-bottom border-4 border-primary">
                     <div class="text-center mb-3">
-                        <i class="bi bi-database-fill-up fs-1 icon-safa"></i>
+                        <i class="bi bi-database-fill-gear fs-1 icon-safa text-primary"></i>
                     </div>
-                    <h5 class="text-center fw-bold">Datos y Carga</h5>
-                    <p class="text-muted text-center small mb-4">Carga masiva de CSV (Profesores, Aulas, Horarios).</p>
-                    <a href="{% url 'central_importar' %}" class="btn-safa-light w-100 mt-auto fw-bold">Cargar Datos</a>
+                    <h5 class="text-center fw-bold">Central de Datos</h5>
+                    <p class="text-muted text-center small mb-4">Gestión integral: Importar CSV, generar tramos horarios y registros.</p>
+                    <a href="{% url 'centro_datos' %}" class="btn-safa-light w-100 mt-auto fw-bold">Abrir Central</a>
                 </div>
             </div>
         </div>

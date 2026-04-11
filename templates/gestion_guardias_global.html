@@ -84,7 +84,16 @@
                                 <tbody>
                                 {% for g in guardias_tramo %}
                                     <tr>
-                                        <td class="fw-bold text-dark">{{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.</td>
+                                        <td>
+                                            <div class="fw-bold text-dark mb-1">
+                                                {{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.
+                                            </div>
+                                            {% if g.motivo_ausencia %}
+                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size: 0.70rem; font-weight: 500;">
+                                                    <i class="bi bi-info-circle me-1"></i>{{ g.motivo_ausencia }}
+                                                </span>
+                                            {% endif %}
+                                        </td>
                                         <td>{{ g.grupo.nombre }}</td>
                                         <td><i class="bi bi-door-open text-muted"></i> {{ g.aula.abrev }}</td>
                                         <td>
@@ -136,7 +145,7 @@
                             {% for profe in profesores_disponibles %}
                                 <div class="list-group-item border-0 p-3 d-flex justify-content-between align-items-center">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary border border-primary d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm" style="width: 40px; height: 40px; font-size: 0.9rem; letter-spacing: 1px;">
+                                        <div class="rounded-circle icon-safa bg-opacity-10 text-primary border border-primary d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm" style="width: 40px; height: 40px; font-size: 0.9rem; letter-spacing: 1px;">
                                             {{ profe.nombre|slice:":1" }}{{ profe.apellidos|slice:":1" }}
                                         </div>
                                         <div>

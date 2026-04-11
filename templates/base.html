@@ -14,68 +14,70 @@
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
 
-{% include 'barra_navegacion.html' %}
+    {% include 'barra_navegacion.html' %}
 
-<div class="toast-container-safa">
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-safa alert-{{ message.tags }} alert-dismissible fade show shadow-lg mb-3"
-                 role="alert">
-                <div class="d-flex align-items-center">
-                    {% if message.tags == 'success' %}
-                        <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
-                    {% elif message.tags == 'error' %}
-                        <i class="bi bi-x-circle-fill fs-5 me-2 text-danger"></i>
-                    {% else %}
-                        <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
-                    {% endif %}
-                    <div class="small fw-bold">{{ message }}</div>
+    <div class="toast-container-safa">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-safa alert-{{ message.tags }} alert-dismissible fade show shadow-lg mb-3"
+                     role="alert">
+                    <div class="d-flex align-items-center">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill fs-5 me-2 text-success"></i>
+                        {% elif message.tags == 'error' %}
+                            <i class="bi bi-x-circle-fill fs-5 me-2 text-danger"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill fs-5 me-2 text-info"></i>
+                        {% endif %}
+                        <div class="small fw-bold">{{ message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-</div>
+            {% endfor %}
+        {% endif %}
+    </div>
 
-{% block body %}
-{% endblock %}
+    <main class="flex-fill">
+        {% block body %}
+        {% endblock %}
+    </main>
 
-{% include 'pie_pagina.html' %}
+    {% include 'pie_pagina.html' %}
 
-{% bootstrap_javascript %}
+    {% bootstrap_javascript %}
 
-<script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        document.querySelectorAll('.tom-select').forEach((el) => {
-            new TomSelect(el, {
-                plugins: ['remove_button'], // Esto habilita la cruz de borrar
-                create: false,              // No permite crear opciones nuevas (solo elegir profesores/grupos reales)
-                placeholder: 'Escribe para buscar...',
-                maxOptions: 100,
-                render: {
-                    no_results: function(data, escape) {
-                        return '<div class="no-results">No se han encontrado resultados</div>';
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            document.querySelectorAll('.tom-select').forEach((el) => {
+                new TomSelect(el, {
+                    plugins: ['remove_button'],
+                    create: false,
+                    placeholder: 'Escribe para buscar...',
+                    maxOptions: 100,
+                    render: {
+                        no_results: function(data, escape) {
+                            return '<div class="no-results">No se han encontrado resultados</div>';
+                        }
                     }
-                }
+                });
             });
         });
-    });
-</script>
+    </script>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const alerts = document.querySelectorAll('.toast-container-safa .alert');
-        alerts.forEach(function (alert) {
-            setTimeout(function () {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            }, 5000); // 5000ms = 5 segundos
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const alerts = document.querySelectorAll('.toast-container-safa .alert');
+            alerts.forEach(function (alert) {
+                setTimeout(function () {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 5000);
+            });
         });
-    });
-</script>
+    </script>
 </body>
 </html>
