@@ -16,7 +16,7 @@
             {% if user.is_authenticated %}
                 <div class="dropdown">
                     <button class="btn btn-light border-0 d-flex align-items-center gap-2 rounded-pill px-3 py-1 shadow-sm"
-                            type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                            type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
 
                         <div class="icon-safa text-white rounded-circle d-flex align-items-center justify-content-center"
                              style="width: 32px; height: 32px;">
@@ -24,59 +24,70 @@
                         </div>
 
                         <div class="text-start d-none d-sm-block">
-                            <div class="fw-bold"
-                                 style="font-size: 0.75rem; line-height: 1;">{{ user.perfil_profesor.nombre }}</div>
-                            <div class="text-muted"
-                                 style="font-size: 0.65rem;">{{ user.perfil_profesor.get_rol_display }}</div>
+                            <div class="fw-bold" style="font-size: 0.75rem; line-height: 1;">{{ user.perfil_profesor.nombre }}</div>
+                            <div class="text-muted" style="font-size: 0.65rem;">{{ user.perfil_profesor.get_rol_display }}</div>
                         </div>
 
                         <i class="bi bi-chevron-down small text-muted"></i>
                     </button>
 
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3"
-                        aria-labelledby="userMenu">
+                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 rounded-3" aria-labelledby="userMenu" style="min-width: 300px;">
 
-                        <li class="px-3 py-2 border-bottom mb-2 bg-light rounded-top" onclick="event.stopPropagation();">
-                            <div class="fw-bold small text-dark mb-1">
-                                <i class="icon-safa bi bi-building me-2"></i>Centro
+                        <li class="px-3 py-2 border-bottom mb-2 bg-light rounded-top">
+                            <div class="fw-bold small text-dark mb-2">
+                                <i class="icon-safa bi bi-building me-1"></i>
+                                {% if centro_activo_admin %}
+                                    {{ centro_activo_admin.nombre }}
+                                {% else %}
+                                    {{ user.perfil_profesor.centro.nombre|default:"Mi centro" }}
+                                {% endif %}
                             </div>
 
                             {% if lista_centros_admin %}
-                                <form method="POST" action="{% url 'cambiar_centro_sesion' %}">
-                                    {% csrf_token %}
-                                    <select name="centro_id" class="form-select form-select-sm text-muted" onchange="this.form.submit()" style="font-size: 0.8rem; min-width: 180px;">
-                                        <option value="">Mi centro por defecto</option>
-                                        {% for c in lista_centros_admin %}
-                                            <option value="{{ c.id }}" {% if centro_activo_admin and centro_activo_admin.id == c.id %}selected{% endif %}>
-                                                {{ c.nombre }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </form>
-                            {% else %}
-                                <div class="small text-muted text-truncate" style="max-width: 180px;">
-                                    {{ user.perfil_profesor.centro.nombre|default:"Sin centro asignado" }}
+                                <div class="input-group input-group-sm mb-2 shadow-sm">
+                                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                                    <input type="text" id="inputBusquedaCentro" class="form-control border-start-0 ps-0"
+                                           placeholder="Buscar otro centro..." style="font-size: 0.8rem;">
                                 </div>
+
+                                <form method="POST" action="{% url 'cambiar_centro_sesion' %}" id="formCambioCentro">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="centro_id" id="inputCentroId">
+
+                                    <div id="listaCentros" class="overflow-auto px-1" style="max-height: 200px;">
+                                        <button type="button"
+                                                class="dropdown-item small py-2 rounded-2 btn-centro mb-1 {% if not centro_activo_admin %}active bg-primary text-white{% endif %}"
+                                                onclick="seleccionarCentro('')">
+                                            <i class="bi bi-house-door me-2"></i>Mi centro por defecto
+                                        </button>
+
+                                        {% for c in lista_centros_admin %}
+                                            <button type="button"
+                                                    class="dropdown-item small py-2 rounded-2 btn-centro mb-1 {% if centro_activo_admin and centro_activo_admin.id == c.id %}active bg-primary text-white{% endif %}"
+                                                    data-nombre="{{ c.nombre|lower }}"
+                                                    onclick="seleccionarCentro('{{ c.id }}')">
+                                                <i class="bi bi-building me-2"></i>{{ c.nombre }}
+                                            </button>
+                                        {% endfor %}
+                                    </div>
+                                </form>
                             {% endif %}
                         </li>
+
                         {% if user.is_superuser or user.perfil_profesor.rol == 'ADMIN' %}
                             <li>
-                                <a class="dropdown-item small py-2 fw-semibold text-dark"
-                                   href="{% url 'crear_cuenta_usuario' %}">
+                                <a class="dropdown-item small py-2 fw-semibold" href="{% url 'crear_cuenta_usuario' %}">
                                     <i class="bi bi-people-fill text-primary me-2"></i> Gestor de Cuentas
                                 </a>
                             </li>
                             <li>
-                                <a class="dropdown-item small py-2 fw-semibold text-dark"
-                                   href="{% url 'central_importar' %}"> <i
-                                        class="bi bi-database-fill-up text-success me-2"></i> Central de Datos
+                                <a class="dropdown-item small py-2 fw-semibold" href="{% url 'central_importar' %}">
+                                    <i class="bi bi-database-fill-up icon-safa me-2"></i> Central de Datos
                                 </a>
                             </li>
                         {% endif %}
 
-                        <li>
-                            <hr class="dropdown-divider">
-                        </li>
+                        <li><hr class="dropdown-divider"></li>
 
                         <li>
                             <form method="post" action="{% url 'logout' %}" class="px-2">
@@ -96,3 +107,38 @@
         </div>
     </div>
 </nav>
+
+<script>
+function seleccionarCentro(id) {
+    document.getElementById('inputCentroId').value = id;
+    document.getElementById('formCambioCentro').submit();
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const inputBusqueda = document.getElementById('inputBusquedaCentro');
+    const listaCentros = document.getElementById('listaCentros');
+
+    if (inputBusqueda) {
+        inputBusqueda.addEventListener('input', function() {
+            const term = this.value.toLowerCase();
+            const botones = listaCentros.getElementsByClassName('btn-centro');
+
+            Array.from(botones).forEach(btn => {
+                const nombreData = btn.getAttribute('data-nombre') || "";
+                const nombreVisible = btn.innerText.toLowerCase();
+
+                if (nombreData.includes(term) || nombreVisible.includes(term)) {
+                    btn.classList.remove('d-none');
+                } else {
+                    btn.classList.add('d-none');
+                }
+            });
+        });
+
+        // Evitar que el dropdown se cierre al clickar el input
+        inputBusqueda.addEventListener('click', function(e) {
+            e.stopPropagation();
+        });
+    }
+});
+</script>
