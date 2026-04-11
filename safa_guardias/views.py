@@ -293,6 +293,7 @@ def visor_horarios(request):
     profesor_id = request.GET.get('profesor')
     etapa_seleccionada = request.GET.get('etapa')
 
+    # Sacamos las horas únicas para pintar las filas de la tabla
     tramos = TramoHorario.objects.filter(centro=centro).order_by('hora_inicio')
     horas_filas = []
     seen_horas = set()
@@ -310,11 +311,13 @@ def visor_horarios(request):
     total_horas = 0
 
     if profesor_id:
+        # 1. Ya comprobamos aquí que el profe es de este centro (Seguridad lista)
         p = get_object_or_404(Profesor, id=profesor_id, centro=centro)
         entidad_nombre = f"Horario de: {p.apellidos}, {p.nombre}"
-        clases = Horario.objects.filter(profesor=p, centro=centro).select_related('materia', 'aula', 'grupo',
-                                                                                  'tramo_horario')
-        guardias = HorarioGuardia.objects.filter(profesor=p, centro=centro).select_related('tramo_horario')
+
+        # 2. Eliminamos "centro=centro" de aquí.
+        clases = Horario.objects.filter(profesor=p).select_related('materia', 'aula', 'grupo', 'tramo_horario')
+        guardias = HorarioGuardia.objects.filter(profesor=p).select_related('tramo_horario')
 
         num_clases = clases.values('tramo_horario').distinct().count()
         num_guardias = guardias.values('tramo_horario').distinct().count()
@@ -331,10 +334,12 @@ def visor_horarios(request):
             horario_tabla.append(fila)
 
     elif grupo_id:
+        # 1. Comprobamos que el grupo es de este centro
         g = get_object_or_404(Grupo, id=grupo_id, centro=centro)
         entidad_nombre = f"Horario de: {g.curso} {g.nombre}"
-        clases = Horario.objects.filter(grupo=g, centro=centro).select_related('materia', 'profesor', 'aula',
-                                                                               'tramo_horario')
+
+        # 2. Eliminamos "centro=centro" de aquí
+        clases = Horario.objects.filter(grupo=g).select_related('materia', 'profesor', 'aula', 'tramo_horario')
 
         for tramo in horas_filas:
             fila = {'tramo': tramo, 'celdas': []}
@@ -379,9 +384,9 @@ def visor_guardias(request):
         }
 
         for dia in dias:
-            # CORREGIDO: Añadimos el filtro por centro
+            # CORREGIDO: Filtramos a través del profesor para asegurar el centro
             guardias_celda = HorarioGuardia.objects.filter(
-                centro=centro,
+                profesor__centro=centro,  # <--- EL TRUCO ESTÁ AQUÍ
                 tramo_horario__hora_inicio=tramo['hora_inicio'],
                 tramo_horario__dia_semana=dia
             ).select_related('profesor')
@@ -404,7 +409,8 @@ def gestionar_baja(request, pk=None):
     titulo = "Editar Baja de Profesor" if pk else "Registrar Nueva Baja"
 
     if request.method == 'POST':
-        form = BajaProfesorForm(request.POST, instance=baja)
+        # ¡IMPORTANTE! Pasamos centro=centro aquí
+        form = BajaProfesorForm(request.POST, instance=baja, centro=centro)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.centro = centro
@@ -413,7 +419,8 @@ def gestionar_baja(request, pk=None):
             messages.success(request, f"Baja {'actualizada' if pk else 'registrada'} correctamente.")
             return redirect('gestion_ausencias')
     else:
-        form = BajaProfesorForm(instance=baja)
+        # ¡Y AQUÍ TAMBIÉN! Para cuando cargamos el formulario vacío
+        form = BajaProfesorForm(instance=baja, centro=centro)
 
     return render(request, 'formulario_ausencias.html',
                   {'form': form, 'titulo': titulo, 'icono': 'bi-person-dash-fill', 'color': 'danger'})
@@ -436,7 +443,8 @@ def gestionar_salida(request, pk=None):
     titulo = "Editar Salida/Excursión" if pk else "Programar Nueva Salida"
 
     if request.method == 'POST':
-        form = SalidaExcursionForm(request.POST, instance=salida)
+        # ¡Añadimos centro=centro!
+        form = SalidaExcursionForm(request.POST, instance=salida, centro=centro)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.centro = centro
@@ -446,7 +454,8 @@ def gestionar_salida(request, pk=None):
             messages.success(request, f"Excursión {'actualizada' if pk else 'programada'} correctamente.")
             return redirect('gestion_ausencias')
     else:
-        form = SalidaExcursionForm(instance=salida)
+        # ¡Añadimos centro=centro!
+        form = SalidaExcursionForm(instance=salida, centro=centro)
 
     return render(request, 'formulario_ausencias.html',
                   {'form': form, 'titulo': titulo, 'icono': 'bi-bus-front-fill', 'color': 'success'})
@@ -511,12 +520,14 @@ def gestion_ausencias(request):
 
 # --- CRUD PARA AUSENCIAS PUNTUALES ---
 @login_required
+@login_required
 def gestionar_ausencia_puntual(request, pk=None):
     centro = obtener_centro_usuario(request)
     ausencia = get_object_or_404(AusenciaPuntual, pk=pk, centro=centro) if pk else None
 
     if request.method == 'POST':
-        form = AusenciaPuntualForm(request.POST, instance=ausencia)
+        # ¡Añadimos centro=centro!
+        form = AusenciaPuntualForm(request.POST, instance=ausencia, centro=centro)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.centro = centro
@@ -525,7 +536,8 @@ def gestionar_ausencia_puntual(request, pk=None):
             messages.success(request, "Ausencia puntual registrada.")
             return redirect('gestion_ausencias')
     else:
-        form = AusenciaPuntualForm(instance=ausencia)
+        # ¡Añadimos centro=centro!
+        form = AusenciaPuntualForm(instance=ausencia, centro=centro)
 
     return render(request, 'formulario_ausencias.html', {
         'form': form,
@@ -544,7 +556,7 @@ def eliminar_ausencia_puntual(request, pk):
     return redirect('gestion_ausencias')
 
 
-# --- GENERADOR DE GUARDIAS ---
+
 def generar_guardias_del_dia(fecha_consulta=None, centro=None):
     if not centro:
         return 0  # Si por algún motivo se llama sin centro, abortamos silenciosamente para no mezclar datos
@@ -581,8 +593,9 @@ def generar_guardias_del_dia(fecha_consulta=None, centro=None):
         for profe in exc.profesores_acompanantes.all():
             objetos_origen[profe.id] = exc
 
+    # CORREGIDO: Filtramos a través de la relación 'profesor'
     clases_hoy = Horario.objects.filter(
-        centro=centro,
+        profesor__centro=centro,  # <--- EL TRUCO AQUÍ
         tramo_horario__dia_semana=dia_sem
     ).exclude(grupo_id__in=ids_grupos_fuera)
 
@@ -621,8 +634,10 @@ def generar_guardias_del_dia(fecha_consulta=None, centro=None):
                 defaults_data['ausencia_origen'] = ausencia_puntual
                 defaults_data['motivo_ausencia'] = f"Ausencia: {ausencia_puntual.motivo or 'Asunto puntual'}"
 
+            # ATENCIÓN: Si tu modelo 'RegistroGuardia' no tiene un campo 'centro' explícito,
+            # tendrás que borrar la línea 'centro=centro' de este get_or_create.
             guardia, created = RegistroGuardia.objects.get_or_create(
-                centro=centro,  # <--- Clave para no mezclar guardias entre colegios
+                centro=centro,  # <--- Déjalo solo si el modelo tiene este campo
                 fecha=fecha_consulta,
                 tramo_horario=clase.tramo_horario,
                 grupo=clase.grupo,
@@ -644,15 +659,13 @@ def generar_guardias_del_dia(fecha_consulta=None, centro=None):
     return registros_creados
 
 
-# NUEVO: Actualizamos la firma de la función para recibir 'centro'
 def obtener_profesores_disponibles(tramo, fecha, centro):
     if not tramo or not centro:
         return []
 
     # 1. Profesores que tienen asignada una guardia en este tramo
-    # CORREGIDO: Filtramos por centro
     en_guardia_ids = set(HorarioGuardia.objects.filter(
-        centro=centro,
+        profesor__centro=centro,  # CORREGIDO
         tramo_horario=tramo
     ).values_list('profesor_id', flat=True))
 
@@ -664,14 +677,14 @@ def obtener_profesores_disponibles(tramo, fecha, centro):
     ).values_list('grupos_implicados__id', flat=True)
 
     liberados_ids = set(Horario.objects.filter(
-        centro=centro,
+        profesor__centro=centro,  # CORREGIDO
         tramo_horario=tramo,
         grupo_id__in=grupos_fuera_ids
     ).values_list('profesor_id', flat=True))
 
     candidatos_ids = en_guardia_ids.union(liberados_ids)
 
-    # 3. FILTRAR QUIÉNES NO ESTÁN REALMENTE
+    # 3. FILTRAR QUIÉNES NO ESTÁN REALMENTE (Bajas, excursiones, ausencias puntuales)
     bajas_ids = BajaProfesor.objects.filter(
         centro=centro,
         fecha_inicio__lte=fecha
@@ -696,7 +709,7 @@ def obtener_profesores_disponibles(tramo, fecha, centro):
 
     # 4. Obtener QuerySet base
     disponibles_qs = Profesor.objects.filter(
-        centro=centro,  # CORREGIDO: Aislamos la consulta de profesores
+        centro=centro,
         id__in=candidatos_ids
     ).exclude(
         id__in=total_ausentes_ids
@@ -712,6 +725,8 @@ def obtener_profesores_disponibles(tramo, fecha, centro):
 
     return disponibles
 
+
+# --- VISTAS ---
 
 @login_required
 def gestion_guardias_global(request):
@@ -731,7 +746,7 @@ def gestion_guardias_global(request):
     dias_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V', 5: 'S', 6: 'D'}
     dia_sem = dias_map[fecha_consulta.weekday()]
 
-    # CORREGIDO: Tramos de ese centro
+    # Tramos del día para este centro
     tramos_del_dia = TramoHorario.objects.filter(centro=centro, dia_semana=dia_sem).order_by('hora_inicio')
 
     tramo_seleccionado = None
@@ -741,21 +756,21 @@ def gestion_guardias_global(request):
     if not tramo_seleccionado and tramos_del_dia.exists():
         tramo_seleccionado = tramos_del_dia.first()
 
-    # CORREGIDO: Le pasamos el centro
+    # Función que asumo tienes en otro lado para generar los registros vacíos
     generar_guardias_del_dia(fecha_consulta, centro)
 
-    # CORREGIDO: Guardias de ese centro
+    # Guardias de ese centro (filtradas por el centro del profesor ausente)
     guardias_dia = RegistroGuardia.objects.filter(
-        centro=centro,
+        profesor_ausente__centro=centro,  # CORREGIDO
         fecha=fecha_consulta
     ).select_related('profesor_ausente', 'grupo', 'tramo_horario')
 
     guardias_tramo = guardias_dia.filter(tramo_horario=tramo_seleccionado) if tramo_seleccionado else []
 
-    # CORREGIDO: Pasamos el centro a la función auxiliar
-    disponibles = obtener_profesores_disponibles(tramo_seleccionado, fecha_consulta,
-                                                 centro) if tramo_seleccionado else []
+    # Profesores disponibles
+    disponibles = obtener_profesores_disponibles(tramo_seleccionado, fecha_consulta, centro) if tramo_seleccionado else []
 
+    # Resumen de pendientes/totales para la interfaz
     resumen_tramos = guardias_dia.values('tramo_horario').annotate(
         pendientes=Count('id', filter=Q(estado='PENT')),
         total=Count('id')
@@ -774,7 +789,8 @@ def gestion_guardias_global(request):
     return render(request, 'gestion_guardias_global.html', context)
 
 
-# NUEVO: Actualizamos para recibir 'centro'
+
+
 def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, centro):
     lista_evaluada = []
     tramo = registro.tramo_horario
@@ -783,9 +799,9 @@ def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, 
 
     profes_ids = [p.id for p in profesores_disponibles]
 
-    # CORREGIDO: Aislamos por centro
+    # CORREGIDO: Aislamos por centro a través del profesor
     horarios_profes = Horario.objects.filter(
-        centro=centro,
+        profesor__centro=centro,  # <--- EL TRUCO AQUÍ
         profesor_id__in=profes_ids
     ).select_related('grupo')
 
@@ -795,21 +811,22 @@ def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, 
         if h.grupo_id == grupo_afectado.id:
             datos_docencia[h.profesor_id]['horas_grupo'] += 1
 
-    # CORREGIDO: Aislamos por centro
+    # CORREGIDO: Aislamos por centro a través del profesor
     guardias_dict = {
         hg.profesor_id: hg.prioridad
-        for hg in HorarioGuardia.objects.filter(centro=centro, tramo_horario=tramo)
+        for hg in HorarioGuardia.objects.filter(profesor__centro=centro, tramo_horario=tramo) # <--- Y AQUÍ
     }
 
-    # CORREGIDO: Aislamos por centro
+    # ESTO ESTÁ BIEN: SalidaExcursion tiene el campo centro
     grupos_fuera_ids = SalidaExcursion.objects.filter(
         centro=centro,
         fecha_inicio__lte=fecha,
         fecha_fin__gte=fecha
     ).values_list('grupos_implicados__id', flat=True)
 
+    # CORREGIDO: Aislamos por centro a través del profesor
     liberados_ids = set(Horario.objects.filter(
-        centro=centro,
+        profesor__centro=centro,  # <--- Y AQUÍ TAMBIÉN
         tramo_horario=tramo,
         grupo_id__in=grupos_fuera_ids
     ).values_list('profesor_id', flat=True))
@@ -847,11 +864,9 @@ def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, 
 
     return lista_evaluada
 
-
 @login_required
 def asignar_guardia(request, registro_id):
     centro = obtener_centro_usuario(request)
-    # CORREGIDO: Evitamos que alguien asigne una guardia de otro centro cambiando la URL
     registro = get_object_or_404(RegistroGuardia, id=registro_id, centro=centro)
 
     if request.method == 'POST':

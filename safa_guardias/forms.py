@@ -24,35 +24,49 @@ class BajaProfesorForm(forms.ModelForm):
         model = BajaProfesor
         fields = ['profesor', 'fecha_inicio', 'fecha_fin', 'observaciones']
         widgets = {
-            # El secreto está en el format='%Y-%m-%d' y el type='date'
             'fecha_inicio': forms.DateInput(format='%Y-%m-%d',
                                             attrs={'type': 'date', 'class': 'form-control shadow-sm'}),
             'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control shadow-sm'}),
-
-            # Aprovechamos para darle estilos Bootstrap a los demás campos
             'profesor': forms.Select(attrs={'class': 'form-select tom-select'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control shadow-sm', 'rows': 3}),
         }
+
+    # Sobrescribimos el init para filtrar por centro
+    def __init__(self, *args, **kwargs):
+        # Extraemos el centro de los kwargs (y lo borramos para que super().__init__ no de error)
+        centro = kwargs.pop('centro', None)
+        super(BajaProfesorForm, self).__init__(*args, **kwargs)
+
+        if centro:
+            # Filtramos el desplegable de profesores
+            self.fields['profesor'].queryset = Profesor.objects.filter(centro=centro).order_by('apellidos', 'nombre')
 
 
 class SalidaExcursionForm(forms.ModelForm):
     class Meta:
         model = SalidaExcursion
-        fields = '__all__'
+        # EXCLUIMOS el centro, se lo asignaremos por debajo en el views.py
+        exclude = ['centro']
         widgets = {
-            'centro': forms.Select(attrs={'class': 'form-select tom-select'}),
             'fecha_inicio': forms.DateInput(format='%Y-%m-%d',
                                             attrs={'type': 'date', 'class': 'form-control shadow-sm'}),
             'fecha_fin': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control shadow-sm'}),
-
-            # Formateo correcto para los campos de hora (HH:MM)
             'hora_inicio': forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'class': 'form-control shadow-sm'}),
             'hora_fin': forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'class': 'form-control shadow-sm'}),
-
             'descripcion': forms.TextInput(attrs={'class': 'form-control shadow-sm'}),
             'profesores_acompanantes': forms.SelectMultiple(attrs={'class': 'form-select tom-select'}),
             'grupos_implicados': forms.SelectMultiple(attrs={'class': 'form-select tom-select'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        centro = kwargs.pop('centro', None)
+        super(SalidaExcursionForm, self).__init__(*args, **kwargs)
+
+        if centro:
+            # Filtramos profesores y grupos por el centro del usuario
+            self.fields['profesores_acompanantes'].queryset = Profesor.objects.filter(centro=centro).order_by(
+                'apellidos')
+            self.fields['grupos_implicados'].queryset = Grupo.objects.filter(centro=centro).order_by('nombre')
 
 
 class AusenciaPuntualForm(forms.ModelForm):
@@ -63,11 +77,16 @@ class AusenciaPuntualForm(forms.ModelForm):
             'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control shadow-sm'}),
             'hora_inicio': forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'class': 'form-control shadow-sm'}),
             'hora_fin': forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'class': 'form-control shadow-sm'}),
-
             'profesor': forms.Select(attrs={'class': 'form-select tom-select'}),
             'motivo': forms.TextInput(attrs={'class': 'form-control shadow-sm'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        centro = kwargs.pop('centro', None)
+        super(AusenciaPuntualForm, self).__init__(*args, **kwargs)
+
+        if centro:
+            self.fields['profesor'].queryset = Profesor.objects.filter(centro=centro).order_by('apellidos')
 
 class GestorUsuarioForm(forms.Form):
     # 1. Datos de Acceso (Django User)
