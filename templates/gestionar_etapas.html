@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block body %}
+    <div class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'centro_datos' %}" class="text-decoration-none">Central de
+                    Datos</a></li>
+                <li class="breadcrumb-item active">Gestión de Etapas</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+            <div>
+                <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-layers me-2 icon-safa"></i>Etapas Educativas</h2>
+                <p class="text-muted mb-0">Administra las etapas académicas impartidas en el centro</p>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-light p-3">
+                        <h5 class="mb-0 fw-bold">
+                            {% if is_edit %}
+                                <i class="bi bi-pencil-square me-2"></i>Editar Etapa
+                            {% else %}
+                                <i class="bi bi-plus-circle me-2"></i>Nueva Etapa
+                            {% endif %}
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" action="{% if is_edit %}?edit={{ form.instance.id }}{% endif %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="save">
+
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Nombre Completo</label>
+                                {{ form.nombre }}
+                                {% if form.nombre.errors %}
+                                    <div class="text-danger small mt-1">{{ form.nombre.errors }}</div>{% endif %}
+                                <div class="form-text small">Ej: Educación Secundaria Obligatoria</div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Siglas</label>
+                                {{ form.siglas }}
+                                {% if form.siglas.errors %}
+                                    <div class="text-danger small mt-1">{{ form.siglas.errors }}</div>{% endif %}
+                                <div class="form-text small">Identificador único (Ej: ESO)</div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-safa rounded-pill fw-bold">
+                                    {% if is_edit %}Actualizar Etapa{% else %}Guardar Etapa{% endif %}
+                                </button>
+                                {% if is_edit %}
+                                    <a href="{% url 'gestionar_etapas' %}" class="btn btn-light rounded-pill">Cancelar
+                                        edición</a>
+                                {% endif %}
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">ID</th>
+                                    <th class="ps-4">Siglas</th>
+                                    <th>Nombre de la Etapa</th>
+                                    <th class="text-end pe-4" style="width: 150px;">Acciones</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for etapa in etapas %}
+                                    <tr>
+                                        <td class="ps-4"><span class="fw-semibold text-dark">{{ etapa.id }}</span></td>
+                                        <td class="ps-4"><span class="badge bg-secondary fs-6">{{ etapa.siglas }}</span>
+                                        </td>
+                                        <td class="fw-semibold text-dark">{{ etapa.nombre }}</td>
+                                        <td class="text-end pe-4">
+                                            <div class="d-flex justify-content-end gap-2">
+                                                <a href="?edit={{ etapa.id }}" class="btn btn-sm btn-light border"
+                                                   title="Editar">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <form method="POST"
+                                                      onsubmit="return confirm('¿Estás seguro de eliminar la etapa {{ etapa.siglas }}? Esta acción no se puede deshacer.');">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="delete">
+                                                    <input type="hidden" name="etapa_id" value="{{ etapa.id }}">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#modalEliminar"
+                                                            data-id="{{ etapa.id }}"
+                                                            data-nombre="{{ etapa.siglas }}"
+                                                            title="Eliminar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="text-center py-5 text-muted">
+                                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                            Aún no hay etapas registradas en el centro.
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger text-white border-0">
+                    <h5 class="modal-title fw-bold" id="modalEliminarLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <i class="bi bi-x-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold">¿Estás seguro?</h5>
+                    <p class="mb-0">Vas a eliminar la etapa <strong id="textoElementoBorrar"
+                                                                    class="text-danger"></strong>.</p>
+                    <p class="text-muted small mt-2">Esta acción no se puede deshacer y fallará si la etapa ya tiene
+                        grupos asignados.</p>
+                </div>
+                <div class="modal-footer bg-light border-0 d-flex justify-content-center">
+                    <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar
+                    </button>
+                    <form method="POST" id="formEliminar">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="etapa_id" id="inputEliminarId" value="">
+                        <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sí, eliminar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

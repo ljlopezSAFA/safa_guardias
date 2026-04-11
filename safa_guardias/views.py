@@ -284,73 +284,85 @@ def descargar_plantilla_csv(request, tipo):
 def visor_horarios(request):
     centro = obtener_centro_usuario(request)
 
-    etapas = Grupo.ETAPAS_CHOICES
-    grupos = Grupo.objects.filter(centro=centro).order_by('etapa', 'curso', 'nombre')
+    etapas_objs = Etapa.objects.filter(centro=centro).order_by('nombre')
+    grupos = Grupo.objects.filter(centro=centro).select_related('etapa').order_by('etapa__nombre', 'curso', 'nombre')
     profesores = Profesor.objects.filter(centro=centro).order_by('apellidos')
     materias_todas = Materia.objects.filter(centro=centro)
 
     grupo_id = request.GET.get('grupo')
     profesor_id = request.GET.get('profesor')
-    etapa_seleccionada = request.GET.get('etapa')
-
-    # Sacamos las horas únicas para pintar las filas de la tabla
-    tramos = TramoHorario.objects.filter(centro=centro).order_by('hora_inicio')
-    horas_filas = []
-    seen_horas = set()
-    for t in tramos:
-        if (t.hora_inicio, t.hora_fin) not in seen_horas:
-            horas_filas.append(t)
-            seen_horas.add((t.hora_inicio, t.hora_fin))
+    etapa_id = request.GET.get('etapa')
 
     dias_semana = ['L', 'M', 'X', 'J', 'V']
     horario_tabla = []
     entidad_nombre = ""
-
     num_clases = 0
     num_guardias = 0
     total_horas = 0
 
+    tramos_base = TramoHorario.objects.filter(centro=centro).prefetch_related('etapas')
+    tramos_qs = []
+    clases = []
+    guardias = []
+
     if profesor_id:
-        # 1. Ya comprobamos aquí que el profe es de este centro (Seguridad lista)
         p = get_object_or_404(Profesor, id=profesor_id, centro=centro)
         entidad_nombre = f"Horario de: {p.apellidos}, {p.nombre}"
 
-        # 2. Eliminamos "centro=centro" de aquí.
-        clases = Horario.objects.filter(profesor=p).select_related('materia', 'aula', 'grupo', 'tramo_horario')
+        clases = Horario.objects.filter(profesor=p).select_related('materia', 'aula', 'grupo__etapa', 'tramo_horario')
         guardias = HorarioGuardia.objects.filter(profesor=p).select_related('tramo_horario')
+
+        # Etapas en las que da clase el profesor
+        etapas_profe = clases.values_list('grupo__etapa_id', flat=True).distinct()
+
+        # Tramos comunes o de sus etapas
+        tramos_qs = tramos_base.filter(
+            Q(etapas__isnull=True) | Q(etapas__id__in=list(etapas_profe))
+        ).distinct().order_by('hora_inicio')
 
         num_clases = clases.values('tramo_horario').distinct().count()
         num_guardias = guardias.values('tramo_horario').distinct().count()
         total_horas = num_clases + num_guardias
 
-        for tramo in horas_filas:
-            fila = {'tramo': tramo, 'celdas': []}
-            for dia in dias_semana:
-                c_celda = [c for c in clases if
-                           c.tramo_horario.hora_inicio == tramo.hora_inicio and c.tramo_horario.dia_semana == dia]
-                g_celda = [g for g in guardias if
-                           g.tramo_horario.hora_inicio == tramo.hora_inicio and g.tramo_horario.dia_semana == dia]
-                fila['celdas'].append({'clases': c_celda, 'guardias': g_celda})
-            horario_tabla.append(fila)
-
     elif grupo_id:
-        # 1. Comprobamos que el grupo es de este centro
         g = get_object_or_404(Grupo, id=grupo_id, centro=centro)
         entidad_nombre = f"Horario de: {g.curso} {g.nombre}"
 
-        # 2. Eliminamos "centro=centro" de aquí
         clases = Horario.objects.filter(grupo=g).select_related('materia', 'profesor', 'aula', 'tramo_horario')
 
-        for tramo in horas_filas:
-            fila = {'tramo': tramo, 'celdas': []}
-            for dia in dias_semana:
-                c_celda = [c for c in clases if
-                           c.tramo_horario.hora_inicio == tramo.hora_inicio and c.tramo_horario.dia_semana == dia]
-                fila['celdas'].append({'clases': c_celda, 'guardias': []})
-            horario_tabla.append(fila)
+        # Tramos comunes o de la etapa del grupo
+        tramos_qs = tramos_base.filter(
+            Q(etapas__isnull=True) | Q(etapas__id=g.etapa_id)
+        ).distinct().order_by('hora_inicio')
+
+    # 1. Recuperamos la lógica de agrupar para NO duplicar filas
+    horas_filas = []
+    seen_horas = set()
+    for t in tramos_qs:
+        if (t.hora_inicio, t.hora_fin) not in seen_horas:
+            horas_filas.append(t)
+            seen_horas.add((t.hora_inicio, t.hora_fin))
+
+    # 2. Construimos la tabla cruzando por HORA y DÍA (no por ID de tramo)
+    for tramo in horas_filas:
+        fila = {'tramo': tramo, 'celdas': []}
+        for dia in dias_semana:
+            # Aquí volvemos a comparar por hora_inicio y dia_semana para que encaje en la cuadrícula
+            c_celda = [c for c in clases if
+                       c.tramo_horario.hora_inicio == tramo.hora_inicio and c.tramo_horario.dia_semana == dia]
+
+            if profesor_id:
+                g_celda = [g for g in guardias if
+                           g.tramo_horario.hora_inicio == tramo.hora_inicio and g.tramo_horario.dia_semana == dia]
+            else:
+                g_celda = []
+
+            fila['celdas'].append({'clases': c_celda, 'guardias': g_celda})
+
+        horario_tabla.append(fila)
 
     return render(request, 'visor_horarios.html', {
-        'etapas': etapas,
+        'etapas': etapas_objs,
         'grupos': grupos,
         'profesores': profesores,
         'materias_todas': materias_todas,
@@ -358,7 +370,7 @@ def visor_horarios(request):
         'dias_semana': dias_semana,
         'grupo_seleccionado': int(grupo_id) if grupo_id and grupo_id.isdigit() else None,
         'profesor_seleccionado': int(profesor_id) if profesor_id and profesor_id.isdigit() else None,
-        'etapa_seleccionada': etapa_seleccionada,
+        'etapa_seleccionada_id': int(etapa_id) if etapa_id and etapa_id.isdigit() else None,
         'entidad_nombre': entidad_nombre,
         'num_clases': num_clases,
         'num_guardias': num_guardias,
@@ -370,26 +382,35 @@ def visor_horarios(request):
 def visor_guardias(request):
     centro = obtener_centro_usuario(request)
 
-    tramos_referencia = TramoHorario.objects.filter(centro=centro).values('hora_inicio',
-                                                                          'hora_fin').distinct().order_by('hora_inicio')
+    # 1. Sacamos las horas únicas y su estado de recreo
+    tramos_referencia = TramoHorario.objects.filter(centro=centro).values(
+        'hora_inicio', 'hora_fin', 'es_recreo'
+    ).distinct().order_by('hora_inicio')
 
     dias = ['L', 'M', 'X', 'J', 'V']
+
+    # 2. Traemos TODAS las guardias del centro de una vez
+    guardias_qs = HorarioGuardia.objects.filter(
+        profesor__centro=centro
+    ).select_related('profesor', 'tramo_horario')
+
     cuadrante = []
 
     for tramo in tramos_referencia:
         fila = {
             'inicio': tramo['hora_inicio'],
             'fin': tramo['hora_fin'],
+            'es_recreo': tramo['es_recreo'],
             'columnas': []
         }
 
         for dia in dias:
-            # CORREGIDO: Filtramos a través del profesor para asegurar el centro
-            guardias_celda = HorarioGuardia.objects.filter(
-                profesor__centro=centro,  # <--- EL TRUCO ESTÁ AQUÍ
-                tramo_horario__hora_inicio=tramo['hora_inicio'],
-                tramo_horario__dia_semana=dia
-            ).select_related('profesor')
+            # 3. Filtramos la lista en memoria (súper rápido)
+            guardias_celda = [
+                g for g in guardias_qs
+                if g.tramo_horario.hora_inicio == tramo['hora_inicio']
+                   and g.tramo_horario.dia_semana == dia
+            ]
 
             fila['columnas'].append(guardias_celda)
 
@@ -991,55 +1012,315 @@ def panel_central_datos(request):
 
 
 @login_required
-@solo_directivos
 def generar_tramos_masivos(request):
     centro = obtener_centro_usuario(request)
     if not centro:
-        messages.error(request, "Selecciona un centro en la barra superior antes de generar tramos.")
+        messages.error(request, "Selecciona un centro válido.")
         return redirect('centro_datos')
 
     if request.method == 'POST':
-        form = GeneradorTramosForm(request.POST)
-        if form.is_valid():
+        form = GeneradorTramosForm(request.POST, centro=centro)
+
+        # Recuperamos los arrays dinámicos del formulario HTML
+        inicios = request.POST.getlist('inicio[]')
+        fines = request.POST.getlist('fin[]')
+        tipos = request.POST.getlist('tipo[]')
+
+        if form.is_valid() and inicios and fines and tipos:
             datos = form.cleaned_data
+            etapas_seleccionadas = datos['etapas']
+
+            # Lógica de borrado (igual que antes)
             if datos['borrar_anteriores']:
-                TramoHorario.objects.filter(centro=centro).delete()
+                tramos_afectados = TramoHorario.objects.filter(centro=centro,
+                                                               etapas__in=etapas_seleccionadas).distinct()
+                for t in tramos_afectados:
+                    t.etapas.remove(*etapas_seleccionadas)
+                    if not t.etapas.exists():
+                        t.delete()
 
             dias_semana = ['L', 'M', 'X', 'J', 'V']
             tramos_creados = 0
-            hoy = date.today()
-            inicio_jornada = datetime.combine(hoy, datos['hora_inicio_jornada'])
-            fin_jornada = datetime.combine(hoy, datos['hora_fin_jornada'])
-            inicio_recreo = datetime.combine(hoy, datos['hora_inicio_recreo'])
-            fin_recreo = datetime.combine(hoy, datos['hora_fin_recreo'])
-            duracion = timedelta(minutes=datos['duracion_minutos'])
+            tramos_actualizados = 0
+
+            # Emparejamos los datos de la plantilla diaria
+            plantilla_diaria = zip(inicios, fines, tipos)
 
             for dia in dias_semana:
-                hora_actual = inicio_jornada
-                while hora_actual < fin_jornada:
-                    if hora_actual == inicio_recreo:
-                        TramoHorario.objects.create(
-                            centro=centro, dia_semana=dia,
-                            hora_inicio=hora_actual.time(), hora_fin=fin_recreo.time(),
-                            descripcion="Recreo"
-                        )
-                        tramos_creados += 1
-                        hora_actual = fin_recreo
-                        continue
+                # Volvemos a emparejar para cada día porque zip se consume iterando
+                plantilla_diaria = zip(inicios, fines, tipos)
 
-                    hora_fin_clase = hora_actual + duracion
-                    if hora_fin_clase > fin_jornada:
-                        hora_fin_clase = fin_jornada
+                for hora_ini, hora_fin, tipo in plantilla_diaria:
+                    if not hora_ini or not hora_fin:
+                        continue  # Saltamos filas vacías
 
-                    TramoHorario.objects.create(
-                        centro=centro, dia_semana=dia,
-                        hora_inicio=hora_actual.time(), hora_fin=hora_fin_clase.time()
+                    es_recreo = (tipo == 'recreo')
+
+                    tramo, created = TramoHorario.objects.get_or_create(
+                        centro=centro,
+                        dia_semana=dia,
+                        hora_inicio=hora_ini,
+                        hora_fin=hora_fin,
+                        defaults={'es_recreo': es_recreo}
                     )
-                    tramos_creados += 1
-                    hora_actual = hora_fin_clase
 
-            messages.success(request, f"¡Éxito! {tramos_creados} tramos generados.")
+                    tramo.etapas.add(*etapas_seleccionadas)
+
+                    if created:
+                        tramos_creados += 1
+                    else:
+                        tramos_actualizados += 1
+
+            messages.success(request, f"¡Éxito! {tramos_creados} tramos creados y {tramos_actualizados} actualizados.")
             return redirect('centro_datos')
+        else:
+            if not inicios:
+                messages.error(request, "Debes añadir al menos un tramo a la plantilla.")
     else:
-        form = GeneradorTramosForm()
+        form = GeneradorTramosForm(centro=centro)
+
     return render(request, 'generador_tramos.html', {'form': form, 'centro': centro})
+
+
+@login_required
+def gestionar_etapas(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar las etapas.")
+        return redirect('centro_datos')  # Ajusta al name de tu url principal
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    etapa_edit_id = request.GET.get('edit')
+    etapa_instancia = None
+    if etapa_edit_id:
+        etapa_instancia = get_object_or_404(Etapa, id=etapa_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # ELIMINAR
+        if action == 'delete':
+            etapa_id = request.POST.get('etapa_id')
+            etapa_a_borrar = get_object_or_404(Etapa, id=etapa_id, centro=centro)
+            try:
+                etapa_a_borrar.delete()
+                messages.success(request, "Etapa eliminada correctamente.")
+            except Exception as e:
+                # Fallará si tiene grupos asociados por el on_delete=models.PROTECT
+                messages.error(request, "No se puede eliminar la etapa porque ya tiene grupos o tramos asociados.")
+            return redirect('gestionar_etapas')
+
+        # CREAR / ACTUALIZAR
+        elif action == 'save':
+            form = EtapaForm(request.POST, instance=etapa_instancia)
+            if form.is_valid():
+                nueva_etapa = form.save(commit=False)
+                nueva_etapa.centro = centro
+                try:
+                    nueva_etapa.save()
+                    mensaje = "Etapa actualizada con éxito." if etapa_instancia else "Etapa creada con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_etapas')
+                except IntegrityError:
+                    messages.error(request,
+                                   f"Ya existe una etapa con las siglas '{nueva_etapa.siglas}' en este centro.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = EtapaForm(instance=etapa_instancia)
+
+    # --- LISTADO (GET) ---
+    etapas = Etapa.objects.filter(centro=centro).order_by('nombre')
+
+    contexto = {
+        'etapas': etapas,
+        'form': form,
+        'is_edit': bool(etapa_instancia),
+        'centro': centro
+    }
+    return render(request, 'gestionar_etapas.html', contexto)
+
+
+@login_required
+def gestionar_grupos(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar los grupos.")
+        return redirect('centro_datos')
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    grupo_edit_id = request.GET.get('edit')
+    grupo_instancia = None
+    if grupo_edit_id:
+        grupo_instancia = get_object_or_404(Grupo, id=grupo_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # ELIMINAR
+        if action == 'delete':
+            grupo_id = request.POST.get('grupo_id')
+            grupo_a_borrar = get_object_or_404(Grupo, id=grupo_id, centro=centro)
+            try:
+                grupo_a_borrar.delete()
+                messages.success(request, "Grupo eliminado correctamente.")
+            except Exception:
+                messages.error(request,
+                               "No se puede eliminar el grupo porque tiene alumnos, horarios o guardias asociadas.")
+            return redirect('gestionar_grupos')
+
+        # CREAR / ACTUALIZAR
+        elif action == 'save':
+            # Pasamos el centro al formulario
+            form = GrupoForm(request.POST, instance=grupo_instancia, centro=centro)
+            if form.is_valid():
+                nuevo_grupo = form.save(commit=False)
+                nuevo_grupo.centro = centro
+                try:
+                    nuevo_grupo.save()
+                    mensaje = "Grupo actualizado con éxito." if grupo_instancia else "Grupo creado con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_grupos')
+                except IntegrityError:
+                    messages.error(request,
+                                   f"El grupo '{nuevo_grupo.curso} {nuevo_grupo.nombre}' ya existe en esta etapa.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = GrupoForm(instance=grupo_instancia, centro=centro)
+
+    # --- LISTADO (GET) ---
+    # Usamos select_related para traer la etapa de golpe y ordenamos jerárquicamente
+    grupos = Grupo.objects.filter(centro=centro).select_related('etapa').order_by('etapa__nombre', 'curso', 'nombre')
+
+    contexto = {
+        'grupos': grupos,
+        'form': form,
+        'is_edit': bool(grupo_instancia),
+        'centro': centro
+    }
+    return render(request, 'gestionar_grupos.html', contexto)
+
+
+@login_required
+def gestionar_materias(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar las materias.")
+        return redirect('centro_datos')
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    materia_edit_id = request.GET.get('edit')
+    materia_instancia = None
+    if materia_edit_id:
+        materia_instancia = get_object_or_404(Materia, id=materia_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # ELIMINAR
+        if action == 'delete':
+            materia_id = request.POST.get('materia_id')
+            materia_a_borrar = get_object_or_404(Materia, id=materia_id, centro=centro)
+            try:
+                materia_a_borrar.delete()
+                messages.success(request, "Materia eliminada correctamente.")
+            except Exception:
+                messages.error(request, "No se puede eliminar la materia porque tiene horarios o guardias asociadas.")
+            return redirect('gestionar_materias')
+
+        # CREAR / ACTUALIZAR
+        elif action == 'save':
+            form = MateriaForm(request.POST, instance=materia_instancia)
+            if form.is_valid():
+                nueva_materia = form.save(commit=False)
+                nueva_materia.centro = centro
+                try:
+                    nueva_materia.save()
+                    mensaje = "Materia actualizada con éxito." if materia_instancia else "Materia creada con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_materias')
+                except IntegrityError:
+                    messages.error(request,
+                                   f"Ya existe una materia con la abreviatura '{nueva_materia.abrev}' en el centro.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = MateriaForm(instance=materia_instancia)
+
+    # --- LISTADO (GET) ---
+    materias = Materia.objects.filter(centro=centro).order_by('nombre')
+
+    contexto = {
+        'materias': materias,
+        'form': form,
+        'is_edit': bool(materia_instancia),
+        'centro': centro
+    }
+    return render(request, 'gestionar_materias.html', contexto)
+
+
+@login_required
+def gestionar_aulas(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar las aulas.")
+        return redirect('centro_datos')
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    aula_edit_id = request.GET.get('edit')
+    aula_instancia = None
+    if aula_edit_id:
+        aula_instancia = get_object_or_404(Aula, id=aula_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        # ELIMINAR
+        if action == 'delete':
+            aula_id = request.POST.get('aula_id')
+            aula_a_borrar = get_object_or_404(Aula, id=aula_id, centro=centro)
+            try:
+                aula_a_borrar.delete()
+                messages.success(request, "Aula eliminada correctamente.")
+            except Exception:
+                messages.error(request, "No se puede eliminar el aula porque tiene horarios o guardias asociadas.")
+            return redirect('gestionar_aulas')
+
+        # CREAR / ACTUALIZAR
+        elif action == 'save':
+            form = AulaForm(request.POST, instance=aula_instancia)
+            if form.is_valid():
+                nueva_aula = form.save(commit=False)
+                nueva_aula.centro = centro
+                try:
+                    nueva_aula.save()
+                    mensaje = "Aula actualizada con éxito." if aula_instancia else "Aula creada con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_aulas')
+                except IntegrityError:
+                    messages.error(request, f"Ya existe una aula con la abreviatura '{nueva_aula.abrev}' en el centro.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = AulaForm(instance=aula_instancia)
+
+    # --- LISTADO (GET) ---
+    # Ordenamos por pabellón primero, para que salgan agrupadas visualmente
+    aulas = Aula.objects.filter(centro=centro).order_by('pabellon', 'nombre')
+
+    contexto = {
+        'aulas': aulas,
+        'form': form,
+        'is_edit': bool(aula_instancia),
+        'centro': centro
+    }
+    return render(request, 'gestionar_aulas.html', contexto)
+
+
+
+

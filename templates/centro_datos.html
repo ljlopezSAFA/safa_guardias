@@ -1,54 +1,254 @@
 {% extends 'base.html' %}
 {% block body %}
-<div class="container py-4"><div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-        <div>
-            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-database-fill-gear text-primary me-2"></i>Central de Datos</h2>
-            <p class="text-muted mb-0">Gestión integral del centro educativo</p>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+            <div>
+                <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-database-fill-gear me-2 icon-safa"></i>Central de
+                    Datos</h2>
+                <p class="text-muted mb-0">Gestión integral del centro educativo</p>
+            </div>
+            <div class="text-end">
+                <span class="badge hero-safa px-3 py-2 fs-6 rounded-pill shadow-sm">{{ centro.nombre|default:"Sin Centro" }}</span>
+            </div>
         </div>
-        <div class="text-end">
-            <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">{{ centro.nombre|default:"Sin Centro" }}</span>
+
+        <h5 class="fw-bold text-secondary mb-3 mt-4"><i class="bi bi-building me-2"></i>Estructura Académica</h5>
+        <div class="row g-4 mb-5">
+
+            <div class="col-md-6 col-lg-3">
+
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-layers fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Etapas</h5>
+                        <p class="text-muted small">ESO, Bachillerato, Ciclos Formativos...</p>
+                        <a href="{% url 'gestionar_etapas' %}"
+                           class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-people fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Grupos</h5>
+                        <p class="text-muted small">Cursos y letras (ej: 1ºA, 2ºB).</p>
+                        <a href="{% url 'gestionar_grupos' %}"
+                           class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-journal-bookmark fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Materias</h5>
+                        <p class="text-muted small">Asignaturas impartidas en el centro.</p>
+                        <a href="{% url 'gestionar_materias' %}"
+                           class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-door-open fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Aulas</h5>
+                        <p class="text-muted small">Aulas, laboratorios y espacios físicos.</p>
+                        <a href="{% url 'gestionar_aulas' %}" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-calendar3 me-2"></i>Gestión de Horarios</h5>
+        <div class="row g-4 mb-5">
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-magic fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Generar Tramos</h5>
+                        <p class="text-muted small">Creador masivo de la jornada escolar.</p>
+                        <a href="{% url 'generar_tramos' %}" class="btn btn-safa w-100 rounded-pill mt-2">Abrir
+                            Creador</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-clock-history fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Gestor Tramos</h5>
+                        <p class="text-muted small">Edición manual de tramos y recreos.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Ver Tramos</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-grid-3x3 fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Horarios Lectivos</h5>
+                        <p class="text-muted small">Asignación de clases a profesores.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-shield-check fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Cuadrante Guardias</h5>
+                        <p class="text-muted small">Configurar quién tiene guardia y cuándo.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-person-badge me-2"></i>Plantilla y Carga Masiva</h5>
+        <div class="row g-4 mb-5">
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-file-earmark-arrow-up fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Importación CSV</h5>
+                        <p class="text-muted small">Carga masiva desde Séneca (Profesores y Horarios).</p>
+                        <a href="{% url 'central_importar' %}" class="btn btn-safa w-100 rounded-pill mt-2">Abrir
+                            Importador</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-person-lines-fill fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Profesores</h5>
+                        <p class="text-muted small">Gestión manual de la plantilla docente del centro.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Ver Profesores</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 border-0 bg-transparent text-center" style="border: 2px dashed #ccc !important;">
+                    <div class="card-body p-4 d-flex flex-column justify-content-center align-items-center">
+                        <i class="bi bi-plus-circle text-muted fs-1 mb-2"></i>
+                        <p class="text-muted small mb-0">Nuevos módulos</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-activity me-2"></i>Operativa e Incidencias</h5>
+        <div class="row g-4">
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-heart-pulse fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Bajas Médicas</h5>
+                        <p class="text-muted small">Control de bajas de larga duración.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-clock-history fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Ausencias</h5>
+                        <p class="text-muted small">Ausencias puntuales y permisos.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-bus-front fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Excursiones</h5>
+                        <p class="text-muted small">Salidas extraescolares y actividades.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 col-lg-3">
+                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                    <div class="card-body p-4 text-center">
+                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
+                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-clipboard-check fs-3"></i>
+                        </div>
+                        <h5 class="fw-bold">Registro Guardias</h5>
+                        <p class="text-muted small">Histórico de clases a cubrir y cubiertas.</p>
+                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Ver Histórico</a>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm hover-shadow transition">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-shape bg-light-success text-success rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                        <i class="bi bi-file-earmark-arrow-up fs-3"></i>
-                    </div>
-                    <h5 class="fw-bold">Importación CSV</h5>
-                    <p class="text-muted small">Carga masiva de Séneca: Profesores, Alumnos, Horarios.</p>
-                    <a href="{% url 'central_importar' %}" class="btn btn-success w-100 rounded-pill mt-2">Abrir Importador</a>
-                </div>
-            </div>
-        </div>
+    <style>
+        .hover-shadow:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15) !important;
+        }
 
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-shape bg-light-info text-info rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                        <i class="bi bi-magic fs-3"></i>
-                    </div>
-                    <h5 class="fw-bold">Auto-Generador</h5>
-                    <p class="text-muted small">Crea la estructura de la jornada escolar (clases y recreos).</p>
-                    <a href="{% url 'generar_tramos' %}" class="btn btn-info text-white w-100 rounded-pill mt-2">Generar Tramos</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100 border-0 shadow-sm opacity-75">
-                <div class="card-body p-4 text-center">
-                    <div class="icon-shape bg-light-primary text-primary rounded-circle mb-3 mx-auto" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                        <i class="bi bi-people fs-3"></i>
-                    </div>
-                    <h5 class="fw-bold">Plantilla Manual</h5>
-                    <p class="text-muted small">Añadir o editar profesores a mano (Sin CSV).</p>
-                    <button class="btn btn-outline-primary w-100 rounded-pill mt-2" disabled>Próximamente</button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+        .transition {
+            transition: all 0.2s ease-in-out;
+        }
+    </style>
 {% endblock %}

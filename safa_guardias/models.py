@@ -81,23 +81,35 @@ class Materia(CentroSaaSModel):
         return self.nombre
 
 
-class Grupo(CentroSaaSModel):
-    ETAPAS_CHOICES = [
-        ('INF', 'Infantil'), ('PRI', 'Primaria'), ('ESO', 'ESO'),
-        ('BAC', 'Bachillerato'), ('CIC', 'Ciclos'), ('OTR', 'Otros'),
-    ]
-
-    nombre = models.CharField(max_length=100)
-    curso = models.CharField(max_length=250)
-    etapa = models.CharField(max_length=3, choices=ETAPAS_CHOICES, default='ESO')
+class Etapa(CentroSaaSModel):
+    nombre = models.CharField(max_length=100, help_text="Ej: Educación Secundaria Obligatoria")
+    siglas = models.CharField(max_length=10, help_text="Ej: ESO")
 
     class Meta:
-        # NUEVO: Evitamos que se creen dos "1ºA ESO" en el mismo colegio
-        unique_together = ['centro', 'nombre', 'curso', 'etapa']
+        verbose_name = "Etapa"
+        verbose_name_plural = "Etapas"
+        unique_together = ['centro', 'siglas'] # Cada centro tiene sus siglas únicas
 
     def __str__(self):
-        return f"{self.curso} {self.nombre} ({self.get_etapa_display()})"
+        return f"{self.siglas} - {self.centro.nombre}"
 
+
+class Grupo(CentroSaaSModel):
+    nombre = models.CharField(max_length=100)  # Ej: "A"
+    curso = models.CharField(max_length=250)  # Ej: "1º"
+    etapa = models.ForeignKey(
+        Etapa,
+        on_delete=models.PROTECT,
+        related_name="grupos", null=True, blank=True
+    )
+
+    class Meta:
+        unique_together = ['centro', 'nombre', 'curso','etapa']
+        verbose_name = "Grupo"
+        verbose_name_plural = "Grupos"
+
+    def __str__(self):
+        return f"{self.curso} {self.nombre}"
 
 class TramoHorario(CentroSaaSModel):
     DIAS_CHOICES = [
@@ -109,11 +121,13 @@ class TramoHorario(CentroSaaSModel):
     hora_fin = models.TimeField()
     dia_semana = models.CharField(max_length=1, choices=DIAS_CHOICES, default='L')
 
+    es_recreo = models.BooleanField(default=False)
+    etapas = models.ManyToManyField(Etapa, blank=True, related_name="tramos")
+
     class Meta:
         verbose_name = "Tramo Horario"
         verbose_name_plural = "Tramos Horarios"
         ordering = ['dia_semana', 'hora_inicio']
-        # NUEVO: Un centro no debería tener tramos duplicados el mismo día a la misma hora
         unique_together = ['centro', 'dia_semana', 'hora_inicio', 'hora_fin']
 
     def __str__(self):

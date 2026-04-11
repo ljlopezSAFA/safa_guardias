@@ -47,5 +47,11 @@ urlpatterns = [
     path('centro-datos/tramos/generar/', views.generar_tramos_masivos, name='generar_tramos'),
 
     path('centro-datos/importar/', views.central_importar, name='central_importar'),
+    path('datos/etapas/', views.gestionar_etapas, name='gestionar_etapas'),
+    path('datos/grupos/', views.gestionar_grupos, name='gestionar_grupos'),
+
+    path('datos/materias/', views.gestionar_materias, name='gestionar_materias'),
+
+path('datos/aulas/', views.gestionar_aulas, name='gestionar_aulas'),
 
 ]

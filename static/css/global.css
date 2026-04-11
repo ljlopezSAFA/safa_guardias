@@ -26,10 +26,11 @@ body {
 }
 
 .hero-safa {
-    background: white;
+    background: var(--safa-blue);
     padding: 60px 0;
     border-bottom: 1px solid #eee;
     margin-bottom: 40px;
+    color:white;
 }
 
 .btn-safa {
@@ -382,7 +383,7 @@ body {
     --bs-btn-hover-bg: #003d7a;
     --bs-btn-hover-border-color: #003d7a;
     --bs-btn-active-bg: #003d7a;
-    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);0
+    --bs-btn-focus-shadow-rgb: var(--bs-primary-rgb);
 }
 
 a {

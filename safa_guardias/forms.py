@@ -149,32 +149,103 @@ class GestorUsuarioForm(forms.Form):
 
 
 class GeneradorTramosForm(forms.Form):
-    hora_inicio_jornada = forms.TimeField(
-        label="Inicio de la Jornada",
-        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
-    )
-    hora_fin_jornada = forms.TimeField(
-        label="Fin de la Jornada",
-        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
-    )
-    duracion_minutos = forms.IntegerField(
-        label="Duración de cada clase (minutos)",
-        initial=55,
-        widget=forms.NumberInput(attrs={'class': 'form-control', 'min': '15', 'max': '120'})
-    )
-    hora_inicio_recreo = forms.TimeField(
-        label="Hora inicio del Recreo",
-        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
-    )
-    hora_fin_recreo = forms.TimeField(
-        label="Hora fin del Recreo",
-        widget=forms.TimeInput(attrs={'type': 'time', 'class': 'form-control'})
+    etapas = forms.ModelMultipleChoiceField(
+        queryset=Etapa.objects.none(),
+        widget=forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input me-2'}),
+        label="Etapas a las que aplica este horario",
+        required=True
     )
 
-    # Opcional: Borrar tramos anteriores para no duplicar
     borrar_anteriores = forms.BooleanField(
-        label="Borrar todos los tramos actuales del centro antes de generar los nuevos",
+        label="Borrar tramos de estas etapas antes de generar",
         required=False,
-        initial=True,
+        initial=False,
         widget=forms.CheckboxInput(attrs={'class': 'form-check-input'})
     )
+
+    def __init__(self, *args, **kwargs):
+        centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+        if centro:
+            self.fields['etapas'].queryset = Etapa.objects.filter(centro=centro)
+
+
+
+class EtapaForm(forms.ModelForm):
+    class Meta:
+        model = Etapa
+        fields = ['nombre', 'siglas']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Educación Secundaria Obligatoria'
+            }),
+            'siglas': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: ESO'
+            }),
+        }
+
+
+class GrupoForm(forms.ModelForm):
+    class Meta:
+        model = Grupo
+        fields = ['curso', 'nombre', 'etapa']
+        widgets = {
+            'curso': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: 1º, 2º, 1º FPB...'
+            }),
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: A, B, PMAR...'
+            }),
+            'etapa': forms.Select(attrs={
+                'class': 'form-select'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+        if centro:
+            # Filtramos para que solo salgan las etapas del centro actual
+            self.fields['etapa'].queryset = Etapa.objects.filter(centro=centro).order_by('nombre')
+            self.fields['etapa'].empty_label = "--- Selecciona una etapa ---"
+
+
+
+class MateriaForm(forms.ModelForm):
+    class Meta:
+        model = Materia
+        fields = ['nombre', 'abrev']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Matemáticas Orientadas a las Enseñanzas Académicas'
+            }),
+            'abrev': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: MAT'
+            }),
+        }
+
+
+class AulaForm(forms.ModelForm):
+    class Meta:
+        model = Aula
+        fields = ['nombre', 'pabellon', 'abrev']
+        widgets = {
+            'nombre': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Aula 101, Laboratorio de Física...'
+            }),
+            'pabellon': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: Edificio Principal, Planta Baja...'
+            }),
+            'abrev': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ej: A101, LABFIS'
+            }),
+        }

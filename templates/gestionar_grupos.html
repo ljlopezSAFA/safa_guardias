@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'centro_datos' %}" class="text-decoration-none">Central de Datos</a></li>
+            <li class="breadcrumb-item active">Gestión de Grupos</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-people me-2"></i>Grupos de Alumnos</h2>
+            <p class="text-muted mb-0">Administra los cursos y letras que forman el centro</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light p-3">
+                    <h5 class="mb-0 fw-bold">
+                        {% if is_edit %}
+                            <i class="bi bi-pencil-square me-2"></i>Editar Grupo
+                        {% else %}
+                            <i class="bi bi-plus-circle me-2"></i>Nuevo Grupo
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{% if is_edit %}?edit={{ form.instance.id }}{% endif %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Etapa Educativa</label>
+                            {{ form.etapa }}
+                            {% if form.etapa.errors %}<div class="text-danger small mt-1">{{ form.etapa.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Curso</label>
+                            {{ form.curso }}
+                            {% if form.curso.errors %}<div class="text-danger small mt-1">{{ form.curso.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Nombre (Letra/Identificador)</label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-safa rounded-pill fw-bold">
+                                {% if is_edit %}Actualizar Grupo{% else %}Guardar Grupo{% endif %}
+                            </button>
+                            {% if is_edit %}
+                                <a href="{% url 'gestionar_grupos' %}" class="btn btn-light rounded-pill">Cancelar edición</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="ps-4">Grupo Completo</th>
+                                    <th>Etapa</th>
+                                    <th class="text-end pe-4" style="width: 150px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grupo in grupos %}
+                                <tr>
+                                    <td class="ps-4 fw-semibold text-dark">{{ grupo.curso }} {{ grupo.nombre }}</td>
+                                    <td><span class="badge bg-secondary fs-6">{{ grupo.etapa.siglas|default:"Sin asignar" }}</span></td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a href="?edit={{ grupo.id }}" class="btn btn-sm btn-light border" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalEliminar" 
+                                                    data-id="{{ grupo.id }}" 
+                                                    data-nombre="{{ grupo.curso }} {{ grupo.nombre }}" 
+                                                    title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        Aún no hay grupos registrados en el centro.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold" id="modalEliminarLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <i class="bi bi-x-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold">¿Estás seguro?</h5>
+                <p class="mb-0">Vas a eliminar el grupo <strong id="textoElementoBorrar" class="text-danger"></strong>.</p>
+                <p class="text-muted small mt-2">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer bg-light border-0 d-flex justify-content-center">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="formEliminar">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="grupo_id" id="inputEliminarId" value="">
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const modalEliminar = document.getElementById('modalEliminar');
+        if (modalEliminar) {
+            modalEliminar.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const idElemento = button.getAttribute('data-id');
+                const nombreElemento = button.getAttribute('data-nombre');
+                
+                document.getElementById('textoElementoBorrar').textContent = nombreElemento;
+                document.getElementById('inputEliminarId').value = idElemento;
+            });
+        }
+    });
+</script>
+{% endblock %}

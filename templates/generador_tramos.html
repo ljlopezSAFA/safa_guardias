@@ -1,58 +1,148 @@
 {% extends 'base.html' %}
 {% block body %}
-<div class="container py-4">
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{% url 'centro_datos' %}">Central de Datos</a></li>
-            <li class="breadcrumb-item active">Generar Tramos</li>
-        </ol>
-    </nav>
+    <div class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'centro_datos' %}">Central de Datos</a></li>
+                <li class="breadcrumb-item active">Generar Tramos</li>
+            </ol>
+        </nav>
 
-    <div class="card border-0 shadow-sm mx-auto" style="max-width: 600px;">
-        <div class="card-header bg-info text-white p-3">
-            <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Configurar Jornada</h5>
-        </div>
-        <div class="card-body p-4">
-            <form method="POST">
-                {% csrf_token %}
-                <div class="row g-3">
-                    <div class="col-6">
-                        <label class="form-label fw-semibold">Inicio Jornada</label>
-                        {{ form.hora_inicio_jornada }}
+        <div class="card border-0 shadow-sm mx-auto" style="max-width: 800px;">
+            <div class="card-header btn-safa text-white p-3">
+                <h5 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2"></i>Generador Avanzado de Horarios</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="formGenerador">
+                    {% csrf_token %}
+
+                    <div class="mb-4 bg-light p-3 rounded border">
+                        <label class="form-label fw-bold text-primary mb-3"><i class="bi bi-layers me-2"></i>1. ¿A qué
+                            etapas aplica este horario?</label>
+                        <div class="d-flex flex-wrap gap-3">
+                            {% for checkbox in form.etapas %}
+                                <div class="form-check">
+                                    {{ checkbox.tag }}
+                                    <label class="form-check-label" for="{{ checkbox.id_for_label }}">
+                                        {{ checkbox.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.etapas.errors %}
+                            <div class="text-danger small mt-2">{{ form.etapas.errors }}</div>
+                        {% endif %}
                     </div>
-                    <div class="col-6">
-                        <label class="form-label fw-semibold">Fin Jornada</label>
-                        {{ form.hora_fin_jornada }}
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-primary mb-3">
+                            <i class="bi bi-layout-text-window me-2"></i>2. Diseña un Día Tipo (Se replicará de Lunes a
+                            Viernes)
+                        </label>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle" id="tablaTramos">
+                                <thead class="bg-light text-center small text-uppercase">
+                                <tr>
+                                    <th>Hora Inicio</th>
+                                    <th>Hora Fin</th>
+                                    <th>Tipo de Tramo</th>
+                                    <th style="width: 50px;"></th>
+                                </tr>
+                                </thead>
+                                <tbody id="tbodyTramos">
+                                <tr>
+                                    <td><input type="time" name="inicio[]" class="form-control" required></td>
+                                    <td><input type="time" name="fin[]" class="form-control" required></td>
+                                    <td>
+                                        <select name="tipo[]" class="form-select">
+                                            <option value="lectivo">Clase Lectiva</option>
+                                            <option value="recreo">Recreo / Descanso</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-outline-danger btn-sm btn-borrar-fila"><i
+                                                class="bi bi-trash"></i></button>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-safa fw-bold" id="btnAñadirFila">
+                            <i class="bi bi-plus-circle me-1"></i>Añadir siguiente tramo
+                        </button>
                     </div>
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Duración Clase (minutos)</label>
-                        {{ form.duracion_minutos }}
-                    </div>
-                    <div class="col-12 bg-light p-3 rounded">
-                        <p class="fw-bold small mb-2 text-uppercase text-secondary">Horario de Recreo</p>
-                        <div class="row">
-                            <div class="col-6">
-                                <label class="form-label small">Inicio Recreo</label>
-                                {{ form.hora_inicio_recreo }}
+
+                    <div class="mt-4 border-top pt-4">
+                        <div class="p-3 rounded-3" style="background-color: #fff5f5; border: 1px dashed #feb2b2;">
+                            <div class="form-check form-switch d-flex align-items-center mb-0">
+                                <div class="me-2">
+                                    {{ form.borrar_anteriores }}
+                                </div>
+                                <label class="form-check-label text-danger fw-bold mb-0" style="cursor: pointer;"
+                                       for="{{ form.borrar_anteriores.id_for_label }}">
+                                    {{ form.borrar_anteriores.label }}
+                                </label>
                             </div>
-                            <div class="col-6">
-                                <label class="form-label small">Fin Recreo</label>
-                                {{ form.hora_fin_recreo }}
+                            <div class="form-text mt-2 text-muted small ms-5">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                Atención: Si activas esta opción, se eliminarán los tramos previos de las etapas
+                                seleccionadas para evitar duplicados.
                             </div>
                         </div>
                     </div>
-                    <div class="col-12">
-                        <div class="form-check form-switch p-0 ms-4">
-                            {{ form.borrar_anteriores }}
-                            <label class="form-check-label text-danger fw-bold ms-2">Limpiar tramos existentes</label>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-info text-white w-100 rounded-pill btn-lg mt-4 shadow-sm">
-                    Generar Semana Completa
-                </button>
-            </form>
+
+                    <button type="submit"
+                            class="btn btn-safa text-white w-100 rounded-pill btn-lg mt-4 shadow-sm fw-bold">
+                        Generar Semana Completa
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
-</div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const tbody = document.getElementById('tbodyTramos');
+            const btnAñadir = document.getElementById('btnAñadirFila');
+
+            // Función para añadir fila
+            btnAñadir.addEventListener('click', function () {
+                // Pillamos la hora de fin de la última fila para autocompletar el inicio de la nueva
+                const ultimosFines = tbody.querySelectorAll('input[name="fin[]"]');
+                let ultimaHora = "";
+                if (ultimosFines.length > 0) {
+                    ultimaHora = ultimosFines[ultimosFines.length - 1].value;
+                }
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                <td><input type="time" name="inicio[]" class="form-control" value="${ultimaHora}" required></td>
+                <td><input type="time" name="fin[]" class="form-control" required></td>
+                <td>
+                    <select name="tipo[]" class="form-select">
+                        <option value="lectivo">Clase Lectiva</option>
+                        <option value="recreo">Recreo / Descanso</option>
+                    </select>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm btn-borrar-fila"><i class="bi bi-trash"></i></button>
+                </td>
+            `;
+                tbody.appendChild(tr);
+            });
+
+            // Delegación de eventos para borrar filas
+            tbody.addEventListener('click', function (e) {
+                if (e.target.closest('.btn-borrar-fila')) {
+                    const fila = e.target.closest('tr');
+                    if (tbody.children.length > 1) {
+                        fila.remove();
+                    } else {
+                        alert("Debe quedar al menos un tramo.");
+                    }
+                }
+            });
+        });
+    </script>
 {% endblock %}

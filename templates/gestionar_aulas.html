@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'centro_datos' %}" class="text-decoration-none">Central de Datos</a></li>
+            <li class="breadcrumb-item active">Gestión de Aulas</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-door-open me-2"></i>Aulas y Espacios</h2>
+            <p class="text-muted mb-0">Administra los espacios físicos disponibles en el centro</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light p-3">
+                    <h5 class="mb-0 fw-bold">
+                        {% if is_edit %}
+                            <i class="bi bi-pencil-square me-2"></i>Editar Aula
+                        {% else %}
+                            <i class="bi bi-plus-circle me-2"></i>Nueva Aula
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{% if is_edit %}?edit={{ form.instance.id }}{% endif %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="save">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Nombre del Aula</label>
+                            {{ form.nombre }}
+                            {% if form.nombre.errors %}<div class="text-danger small mt-1">{{ form.nombre.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ubicación</label>
+                            {{ form.pabellon }}
+                            {% if form.pabellon.errors %}<div class="text-danger small mt-1">{{ form.pabellon.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Abreviatura</label>
+                            {{ form.abrev }}
+                            {% if form.abrev.errors %}<div class="text-danger small mt-1">{{ form.abrev.errors }}</div>{% endif %}
+                            <div class="form-text small">Identificador corto único (Ej: A101)</div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-safa rounded-pill fw-bold">
+                                {% if is_edit %}Actualizar Aula{% else %}Guardar Aula{% endif %}
+                            </button>
+                            {% if is_edit %}
+                                <a href="{% url 'gestionar_aulas' %}" class="btn btn-light rounded-pill">Cancelar edición</a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold text-secondary">Listado de Aulas</h5>
+                    <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="buscadorTabla" class="form-control border-start-0 ps-0 bg-light" placeholder="Buscar aula o pabellón...">
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0" id="tablaRegistros">
+                            <thead class="bg-light sticky-top shadow-sm">
+                                <tr>
+                                    <th class="ps-4" style="width: 100px;">Abrev.</th>
+                                    <th>Nombre</th>
+                                    <th>Ubicacíon</th>
+                                    <th class="text-end pe-4" style="width: 130px;">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for aula in aulas %}
+                                <tr class="fila-registro">
+                                    <td class="ps-4"><span class="badge bg-secondary fs-6">{{ aula.abrev }}</span></td>
+                                    <td class="fw-semibold text-dark">{{ aula.nombre }}</td>
+                                    <td class="text-muted"><i class="bi bi-geo-alt me-1"></i>{{ aula.pabellon }}</td>
+                                    <td class="text-end pe-4">
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a href="?edit={{ aula.id }}" class="btn btn-sm btn-light border" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalEliminar" 
+                                                    data-id="{{ aula.id }}" 
+                                                    data-nombre="{{ aula.nombre }} ({{ aula.pabellon }})" 
+                                                    title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr class="sin-registros">
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                        Aún no hay aulas registradas en el centro.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                <tr id="filaSinResultados" style="display: none;">
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="bi bi-search fs-1 d-block mb-2"></i>
+                                        No se han encontrado aulas que coincidan con la búsqueda.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalEliminar" tabindex="-1" aria-labelledby="modalEliminarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-danger text-white border-0">
+                <h5 class="modal-title fw-bold" id="modalEliminarLabel">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 text-center">
+                <i class="bi bi-x-circle text-danger mb-3" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold">¿Estás seguro?</h5>
+                <p class="mb-0">Vas a eliminar el aula <strong id="textoElementoBorrar" class="text-danger"></strong>.</p>
+                <p class="text-muted small mt-2">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer bg-light border-0 d-flex justify-content-center">
+                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="formEliminar">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="aula_id" id="inputEliminarId" value="">
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Sí, eliminar</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // --- 1. LÓGICA DEL MODAL DE BORRADO ---
+        const modalEliminar = document.getElementById('modalEliminar');
+        if (modalEliminar) {
+            modalEliminar.addEventListener('show.bs.modal', function (event) {
+                const button = event.relatedTarget;
+                const idElemento = button.getAttribute('data-id');
+                const nombreElemento = button.getAttribute('data-nombre');
+                
+                document.getElementById('textoElementoBorrar').textContent = nombreElemento;
+                document.getElementById('inputEliminarId').value = idElemento;
+            });
+        }
+
+        // --- 2. LÓGICA DEL BUSCADOR DINÁMICO ---
+        const buscador = document.getElementById('buscadorTabla');
+        const filas = document.querySelectorAll('.fila-registro');
+        const filaSinResultados = document.getElementById('filaSinResultados');
+
+        if (buscador) {
+            buscador.addEventListener('keyup', function() {
+                const termino = this.value.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); 
+                let resultadosVisibles = 0;
+
+                filas.forEach(function(fila) {
+                    const textoFila = fila.textContent.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    
+                    if (textoFila.includes(termino)) {
+                        fila.style.display = '';
+                        resultadosVisibles++;
+                    } else {
+                        fila.style.display = 'none';
+                    }
+                });
+
+                if (resultadosVisibles === 0 && filas.length > 0) {
+                    filaSinResultados.style.display = '';
+                } else {
+                    filaSinResultados.style.display = 'none';
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
