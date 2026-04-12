@@ -44,7 +44,7 @@ urlpatterns = [
 
     path('centro-datos/', views.panel_central_datos, name='centro_datos'),
 
-    path('centro-datos/tramos/generar/', views.generar_tramos_masivos, name='generar_tramos'),
+    path('datos/tramos/', views.gestionar_tramos, name='gestionar_tramos'),
 
     path('centro-datos/importar/', views.central_importar, name='central_importar'),
     path('datos/etapas/', views.gestionar_etapas, name='gestionar_etapas'),
@@ -52,6 +52,11 @@ urlpatterns = [
 
     path('datos/materias/', views.gestionar_materias, name='gestionar_materias'),
 
-path('datos/aulas/', views.gestionar_aulas, name='gestionar_aulas'),
+    path('datos/aulas/', views.gestionar_aulas, name='gestionar_aulas'),
+    path('datos/horarios/', views.gestionar_horarios, name='gestionar_horarios'),
+
+    path('datos/guardias/', views.gestionar_guardias, name='gestionar_guardias'),
+
+    path('datos/profesores/', views.gestionar_profesores, name='gestionar_profesores'),
 
 ]

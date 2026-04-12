@@ -249,3 +249,172 @@ class AulaForm(forms.ModelForm):
                 'placeholder': 'Ej: A101, LABFIS'
             }),
         }
+
+class TramoIndividualForm(forms.ModelForm):
+    class Meta:
+        model = TramoHorario
+        fields = ['dia_semana', 'hora_inicio', 'hora_fin', 'es_recreo', 'etapas']
+        widgets = {
+            'dia_semana': forms.Select(attrs={'class': 'form-select'}),
+            'hora_inicio': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'hora_fin': forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}),
+            'es_recreo': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'etapas': forms.CheckboxSelectMultiple(attrs={'class': 'form-check-input'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+        if centro:
+            self.fields['etapas'].queryset = Etapa.objects.filter(centro=centro)
+
+
+class HorarioForm(forms.ModelForm):
+    # Campos "virtuales" que no van directos a la BD del Horario, sino que nos sirven para buscar el Tramo
+    dia_semana = forms.ChoiceField(choices=TramoHorario.DIAS_CHOICES, widget=forms.Select(attrs={'class': 'form-select select-buscador'}))
+    hora_inicio = forms.TimeField(widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}))
+    hora_fin = forms.TimeField(widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}))
+    etapa = forms.ModelChoiceField(queryset=Etapa.objects.none(), widget=forms.Select(attrs={'class': 'form-select select-buscador'}))
+
+    class Meta:
+        model = Horario
+        # Hemos quitado 'tramo_horario' de aquí porque lo calcularemos en el clean()
+        fields = ['grupo', 'materia', 'profesor', 'aula']
+        widgets = {
+            'profesor': forms.Select(attrs={'class': 'form-select select-buscador'}),
+            'materia': forms.Select(attrs={'class': 'form-select select-buscador'}),
+            'aula': forms.Select(attrs={'class': 'form-select select-buscador'}),
+            'grupo': forms.Select(attrs={'class': 'form-select select-buscador'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+        if self.centro:
+            # Filtramos todos los selectores por centro
+            self.fields['profesor'].queryset = Profesor.objects.filter(centro=self.centro)
+            self.fields['materia'].queryset = Materia.objects.filter(centro=self.centro).order_by('nombre')
+            self.fields['aula'].queryset = Aula.objects.filter(centro=self.centro).order_by('nombre')
+            self.fields['grupo'].queryset = Grupo.objects.filter(centro=self.centro).order_by('curso', 'nombre')
+            self.fields['etapa'].queryset = Etapa.objects.filter(centro=self.centro)
+
+        # Si estamos editando un horario que ya existe, rellenamos los campos virtuales
+        if self.instance and self.instance.pk:
+            tramo = self.instance.tramo_horario
+            self.initial['dia_semana'] = tramo.dia_semana
+            self.initial['hora_inicio'] = tramo.hora_inicio
+            self.initial['hora_fin'] = tramo.hora_fin
+            # Asignamos la etapa basándonos en el grupo
+            if self.instance.grupo:
+                self.initial['etapa'] = self.instance.grupo.etapa
+
+    def clean(self):
+        cleaned_data = super().clean()
+        dia = cleaned_data.get('dia_semana')
+        inicio = cleaned_data.get('hora_inicio')
+        fin = cleaned_data.get('hora_fin')
+        etapa = cleaned_data.get('etapa')
+
+        # Si el usuario ha rellenado los 4 campos de tiempo, buscamos el tramo
+        if dia and inicio and fin and etapa:
+            try:
+                # Buscamos el TramoHorario que coincida
+                tramo = TramoHorario.objects.get(
+                    centro=self.centro,
+                    dia_semana=dia,
+                    hora_inicio=inicio,
+                    hora_fin=fin,
+                    etapas=etapa # Comprobamos que el tramo aplique a esta etapa
+                )
+                # ¡Magia! Se lo inyectamos a la instancia antes de que Django la guarde
+                self.instance.tramo_horario = tramo
+            except TramoHorario.DoesNotExist:
+                raise forms.ValidationError("No existe un tramo horario configurado con ese día, horas y etapa en este centro. Créalo primero en la gestión de tramos.")
+            except TramoHorario.MultipleObjectsReturned:
+                # Por si acaso hay duplicados en BD
+                tramo = TramoHorario.objects.filter(centro=self.centro, dia_semana=dia, hora_inicio=inicio, hora_fin=fin, etapas=etapa).first()
+                self.instance.tramo_horario = tramo
+
+        return cleaned_data
+
+
+class HorarioGuardiaForm(forms.ModelForm):
+    # Campos "virtuales" para buscar el Tramo
+    dia_semana = forms.ChoiceField(choices=TramoHorario.DIAS_CHOICES, widget=forms.Select(attrs={'class': 'form-select select-buscador'}))
+    hora_inicio = forms.TimeField(widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}))
+    hora_fin = forms.TimeField(widget=forms.TimeInput(attrs={'class': 'form-control', 'type': 'time'}))
+    etapa = forms.ModelChoiceField(queryset=Etapa.objects.none(), widget=forms.Select(attrs={'class': 'form-select select-buscador'}))
+
+    class Meta:
+        model = HorarioGuardia
+        fields = ['profesor', 'tipo_guardia', 'prioridad']
+        widgets = {
+            'profesor': forms.Select(attrs={'class': 'form-select select-buscador'}),
+            'tipo_guardia': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: GU-CO, GU-TU , OAL ...'}),
+            'prioridad': forms.NumberInput(attrs={'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+        if self.centro:
+            self.fields['profesor'].queryset = Profesor.objects.filter(centro=self.centro)
+            self.fields['etapa'].queryset = Etapa.objects.filter(centro=self.centro)
+
+        # Rellenar campos si estamos editando
+        if self.instance and self.instance.pk:
+            tramo = self.instance.tramo_horario
+            self.initial['dia_semana'] = tramo.dia_semana
+            self.initial['hora_inicio'] = tramo.hora_inicio
+            self.initial['hora_fin'] = tramo.hora_fin
+            # Como el tramo puede tener varias etapas, pillamos la primera para el formulario
+            if tramo.etapas.exists():
+                self.initial['etapa'] = tramo.etapas.first()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        dia = cleaned_data.get('dia_semana')
+        inicio = cleaned_data.get('hora_inicio')
+        fin = cleaned_data.get('hora_fin')
+        etapa = cleaned_data.get('etapa')
+
+        if dia and inicio and fin and etapa:
+            try:
+                # Buscamos el tramo que coincida con esos datos exactos en ese centro
+                tramo = TramoHorario.objects.get(
+                    centro=self.centro,
+                    dia_semana=dia,
+                    hora_inicio=inicio,
+                    hora_fin=fin,
+                    etapas=etapa
+                )
+                self.instance.tramo_horario = tramo
+            except TramoHorario.DoesNotExist:
+                raise forms.ValidationError("No existe un tramo horario configurado con ese día, horas y etapa en este centro. Créalo primero.")
+            except TramoHorario.MultipleObjectsReturned:
+                tramo = TramoHorario.objects.filter(centro=self.centro, dia_semana=dia, hora_inicio=inicio, hora_fin=fin, etapas=etapa).first()
+                self.instance.tramo_horario = tramo
+
+        return cleaned_data
+
+
+class ProfesorForm(forms.ModelForm):
+    class Meta:
+        model = Profesor
+        fields = ['nombre', 'apellidos', 'abreviatura', 'email', 'rol', 'usuario']
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Laura'}),
+            'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: García López'}),
+            'abreviatura': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: LGL'}),
+            'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@colegio.com'}),
+            'rol': forms.Select(attrs={'class': 'form-select'}),
+            'usuario': forms.Select(attrs={'class': 'form-select select-buscador'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+
+        # Opcional: Podrías filtrar los usuarios para que solo salgan los que no tienen profesor asignado,
+        # pero por ahora dejamos todos los activos disponibles.
+        self.fields['usuario'].queryset = User.objects.filter(is_active=True).order_by('username')

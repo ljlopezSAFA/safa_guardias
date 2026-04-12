@@ -1,17 +1,17 @@
 import csv
 import io
 from datetime import datetime, timedelta, date
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
 from django.db.models import Q, Count
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
-
+from django.db.models import Case, When, Value, IntegerField
 from .decorators import rol_requerido, solo_directivos
 from .forms import *
 from .utils import obtener_centro_usuario
+from django.core.paginator import Paginator
 
 
 # Create your views here.
@@ -1012,74 +1012,109 @@ def panel_central_datos(request):
 
 
 @login_required
-def generar_tramos_masivos(request):
+def gestionar_tramos(request):
     centro = obtener_centro_usuario(request)
     if not centro:
-        messages.error(request, "Selecciona un centro válido.")
+        messages.error(request, "Selecciona un centro antes de gestionar horarios.")
         return redirect('centro_datos')
 
+    # --- LÓGICA DE EDICIÓN INDIVIDUAL (GET) ---
+    tramo_edit_id = request.GET.get('edit')
+    tramo_instancia = None
+    if tramo_edit_id:
+        tramo_instancia = get_object_or_404(TramoHorario, id=tramo_edit_id, centro=centro)
+
     if request.method == 'POST':
-        form = GeneradorTramosForm(request.POST, centro=centro)
+        action = request.POST.get('action')
 
-        # Recuperamos los arrays dinámicos del formulario HTML
-        inicios = request.POST.getlist('inicio[]')
-        fines = request.POST.getlist('fin[]')
-        tipos = request.POST.getlist('tipo[]')
+        # 1. ELIMINAR TRAMO
+        if action == 'delete':
+            tramo_id = request.POST.get('tramo_id')
+            tramo_a_borrar = get_object_or_404(TramoHorario, id=tramo_id, centro=centro)
+            tramo_a_borrar.delete()
+            messages.success(request, "Tramo eliminado correctamente.")
+            return redirect('gestionar_tramos')
 
-        if form.is_valid() and inicios and fines and tipos:
-            datos = form.cleaned_data
-            etapas_seleccionadas = datos['etapas']
+        # 2. ACTUALIZAR UN ÚNICO TRAMO
+        elif action == 'save_single':
+            form_individual = TramoIndividualForm(request.POST, instance=tramo_instancia, centro=centro)
+            if form_individual.is_valid():
+                form_individual.save()
+                messages.success(request, "Tramo individual actualizado con éxito.")
+                return redirect('gestionar_tramos')
 
-            # Lógica de borrado (igual que antes)
-            if datos['borrar_anteriores']:
-                tramos_afectados = TramoHorario.objects.filter(centro=centro,
-                                                               etapas__in=etapas_seleccionadas).distinct()
-                for t in tramos_afectados:
-                    t.etapas.remove(*etapas_seleccionadas)
-                    if not t.etapas.exists():
-                        t.delete()
+        # 3. GENERADOR MASIVO (Tu código original adaptado)
+        elif action == 'generar_masivo':
+            form_masivo = GeneradorTramosForm(request.POST, centro=centro)
+            inicios = request.POST.getlist('inicio[]')
+            fines = request.POST.getlist('fin[]')
+            tipos = request.POST.getlist('tipo[]')
 
-            dias_semana = ['L', 'M', 'X', 'J', 'V']
-            tramos_creados = 0
-            tramos_actualizados = 0
+            if form_masivo.is_valid() and inicios and fines and tipos:
+                datos = form_masivo.cleaned_data
+                etapas_seleccionadas = datos['etapas']
 
-            # Emparejamos los datos de la plantilla diaria
-            plantilla_diaria = zip(inicios, fines, tipos)
+                # Lógica de borrado previo
+                if datos['borrar_anteriores']:
+                    tramos_afectados = TramoHorario.objects.filter(centro=centro,
+                                                                   etapas__in=etapas_seleccionadas).distinct()
+                    for t in tramos_afectados:
+                        t.etapas.remove(*etapas_seleccionadas)
+                        if not t.etapas.exists():
+                            t.delete()
 
-            for dia in dias_semana:
-                # Volvemos a emparejar para cada día porque zip se consume iterando
-                plantilla_diaria = zip(inicios, fines, tipos)
+                dias_semana = ['L', 'M', 'X', 'J', 'V']  # Ajusta si tu modelo usa otros values
+                tramos_creados, tramos_actualizados = 0, 0
 
-                for hora_ini, hora_fin, tipo in plantilla_diaria:
-                    if not hora_ini or not hora_fin:
-                        continue  # Saltamos filas vacías
+                for dia in dias_semana:
+                    plantilla_diaria = zip(inicios, fines, tipos)
+                    for hora_ini, hora_fin, tipo in plantilla_diaria:
+                        if not hora_ini or not hora_fin: continue
 
-                    es_recreo = (tipo == 'recreo')
+                        es_recreo = (tipo == 'recreo')
+                        tramo, created = TramoHorario.objects.get_or_create(
+                            centro=centro, dia_semana=dia, hora_inicio=hora_ini, hora_fin=hora_fin,
+                            defaults={'es_recreo': es_recreo}
+                        )
+                        tramo.etapas.add(*etapas_seleccionadas)
 
-                    tramo, created = TramoHorario.objects.get_or_create(
-                        centro=centro,
-                        dia_semana=dia,
-                        hora_inicio=hora_ini,
-                        hora_fin=hora_fin,
-                        defaults={'es_recreo': es_recreo}
-                    )
+                        if created:
+                            tramos_creados += 1
+                        else:
+                            tramos_actualizados += 1
 
-                    tramo.etapas.add(*etapas_seleccionadas)
+                messages.success(request,
+                                 f"¡Éxito! {tramos_creados} tramos creados y {tramos_actualizados} actualizados.")
+                return redirect('gestionar_tramos')
+            else:
+                messages.error(request, "Debes seleccionar etapas y añadir al menos un tramo válido.")
 
-                    if created:
-                        tramos_creados += 1
-                    else:
-                        tramos_actualizados += 1
+    # --- INICIALIZACIÓN DE FORMULARIOS PARA GET ---
+    form_masivo = GeneradorTramosForm(centro=centro)
+    form_individual = TramoIndividualForm(instance=tramo_instancia, centro=centro) if tramo_instancia else None
 
-            messages.success(request, f"¡Éxito! {tramos_creados} tramos creados y {tramos_actualizados} actualizados.")
-            return redirect('centro_datos')
-        else:
-            if not inicios:
-                messages.error(request, "Debes añadir al menos un tramo a la plantilla.")
-    else:
-        form = GeneradorTramosForm(centro=centro)
+    # --- LISTADO (Columna Derecha) ---
+    tramos = TramoHorario.objects.filter(centro=centro).prefetch_related('etapas').annotate(
+        orden_dia=Case(
+            When(dia_semana='L', then=Value(1)),
+            When(dia_semana='M', then=Value(2)),
+            When(dia_semana='X', then=Value(3)),
+            When(dia_semana='J', then=Value(4)),
+            When(dia_semana='V', then=Value(5)),
+            When(dia_semana='S', then=Value(6)),
+            When(dia_semana='D', then=Value(7)),
+            output_field=IntegerField(),
+        )
+    ).order_by('orden_dia', 'hora_inicio')
 
-    return render(request, 'generador_tramos.html', {'form': form, 'centro': centro})
+    contexto = {
+        'tramos': tramos,
+        'form_masivo': form_masivo,
+        'form_individual': form_individual,
+        'is_edit': bool(tramo_instancia),
+        'centro': centro
+    }
+    return render(request, 'gestionar_tramos.html', contexto)
 
 
 @login_required
@@ -1322,5 +1357,283 @@ def gestionar_aulas(request):
     return render(request, 'gestionar_aulas.html', contexto)
 
 
+@login_required
+def gestionar_horarios(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar los horarios.")
+        return redirect('centro_datos')
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    horario_edit_id = request.GET.get('edit')
+    horario_instancia = None
+    if horario_edit_id:
+        horario_instancia = get_object_or_404(Horario, id=horario_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'delete':
+            horario_id = request.POST.get('horario_id')
+            horario_a_borrar = get_object_or_404(Horario, id=horario_id, centro=centro)
+            horario_a_borrar.delete()
+            messages.success(request, "Asignación de horario eliminada correctamente.")
+            return redirect('gestionar_horarios')
+
+        elif action == 'save':
+            form = HorarioForm(request.POST, instance=horario_instancia, centro=centro)
+            if form.is_valid():
+                nuevo_horario = form.save(commit=False)
+                nuevo_horario.centro = centro
+                try:
+                    nuevo_horario.save()
+                    mensaje = "Horario actualizado con éxito." if horario_instancia else "Asignación creada con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_horarios')
+                except IntegrityError:
+                    messages.error(request, "Ya existe un conflicto con esta asignación horaria.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = HorarioForm(instance=horario_instancia, centro=centro)
+
+    # --- CAPTURA DE FILTROS AVANZADOS (GET) ---
+    f_dia = request.GET.get('f_dia', '')
+    f_etapa = request.GET.get('f_etapa', '')
+    f_grupo = request.GET.get('f_grupo', '')
+    f_materia = request.GET.get('f_materia', '')
+    f_profesor = request.GET.get('f_profesor', '')
+
+    horarios_base = Horario.objects.filter(centro=centro)
+
+    if f_dia:
+        horarios_base = horarios_base.filter(tramo_horario__dia_semana=f_dia)
+    if f_etapa:
+        horarios_base = horarios_base.filter(grupo__etapa_id=f_etapa)
+    if f_grupo:
+        horarios_base = horarios_base.filter(grupo_id=f_grupo)
+    if f_materia:
+        horarios_base = horarios_base.filter(materia_id=f_materia)
+    if f_profesor:
+        horarios_base = horarios_base.filter(profesor_id=f_profesor)
+
+    # --- LISTADO OPTIMIZADO Y ORDENADO ---
+    horarios_completos = horarios_base.annotate(
+        orden_dia=Case(
+            When(tramo_horario__dia_semana='L', then=Value(1)),
+            When(tramo_horario__dia_semana='M', then=Value(2)),
+            When(tramo_horario__dia_semana='X', then=Value(3)),
+            When(tramo_horario__dia_semana='J', then=Value(4)),
+            When(tramo_horario__dia_semana='V', then=Value(5)),
+            When(tramo_horario__dia_semana='S', then=Value(6)),
+            When(tramo_horario__dia_semana='D', then=Value(7)),
+            output_field=IntegerField(),
+        )
+    ).order_by('orden_dia', 'tramo_horario__hora_inicio', 'grupo__nombre')
+
+    # --- PAGINACIÓN ---
+    paginator = Paginator(horarios_completos, 50)  # Muestra 50 registros por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Preparamos la URL base de los filtros para no perderlos al cambiar de página
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    url_params = query_params.urlencode()  # Ej: "f_dia=L&f_grupo=3"
+
+    contexto = {
+        'page_obj': page_obj,  # Cambiamos 'horarios' por 'page_obj'
+        'url_params': url_params,  # Lo mandamos a la plantilla
+        'form': form,
+        'is_edit': bool(horario_instancia),
+        'centro': centro,
+        'dias_choices': TramoHorario.DIAS_CHOICES,
+        'etapas_list': Etapa.objects.filter(centro=centro),
+        'grupos_list': Grupo.objects.filter(centro=centro).order_by('curso', 'nombre'),
+        'materias_list': Materia.objects.filter(centro=centro).order_by('nombre'),
+        'profesores_list': Profesor.objects.filter(centro=centro),
+        'current_filters': request.GET,
+    }
+    return render(request, 'gestionar_horarios.html', contexto)
 
 
+@login_required
+def gestionar_guardias(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar las guardias.")
+        return redirect('centro_datos')
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    guardia_edit_id = request.GET.get('edit')
+    guardia_instancia = None
+    if guardia_edit_id:
+        guardia_instancia = get_object_or_404(HorarioGuardia, id=guardia_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'delete':
+            guardia_id = request.POST.get('guardia_id')
+            guardia_a_borrar = get_object_or_404(HorarioGuardia, id=guardia_id, centro=centro)
+            guardia_a_borrar.delete()
+            messages.success(request, "Guardia eliminada correctamente.")
+            return redirect('gestionar_guardias')
+
+        elif action == 'save':
+            form = HorarioGuardiaForm(request.POST, instance=guardia_instancia, centro=centro)
+            if form.is_valid():
+                nueva_guardia = form.save(commit=False)
+                nueva_guardia.centro = centro
+                try:
+                    nueva_guardia.save()
+                    mensaje = "Guardia actualizada con éxito." if guardia_instancia else "Guardia creada con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_guardias')
+                except IntegrityError:
+                    messages.error(request, "Error al guardar la guardia.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = HorarioGuardiaForm(instance=guardia_instancia, centro=centro)
+
+    # --- CAPTURA DE FILTROS AVANZADOS (GET) ---
+    f_dia = request.GET.get('f_dia', '')
+    f_etapa = request.GET.get('f_etapa', '')
+    f_profesor = request.GET.get('f_profesor', '')
+    f_tipo = request.GET.get('f_tipo', '')  # Búsqueda de texto para el tipo de guardia
+
+    guardias_base = HorarioGuardia.objects.filter(centro=centro)
+
+    if f_dia:
+        guardias_base = guardias_base.filter(tramo_horario__dia_semana=f_dia)
+    if f_etapa:
+        guardias_base = guardias_base.filter(tramo_horario__etapas__id=f_etapa)
+    if f_profesor:
+        guardias_base = guardias_base.filter(profesor_id=f_profesor)
+    if f_tipo:
+        guardias_base = guardias_base.filter(tipo_guardia__icontains=f_tipo)
+
+    # --- LISTADO OPTIMIZADO Y ORDENADO ---
+    guardias_completas = guardias_base.annotate(
+        orden_dia=Case(
+            When(tramo_horario__dia_semana='L', then=Value(1)),
+            When(tramo_horario__dia_semana='M', then=Value(2)),
+            When(tramo_horario__dia_semana='X', then=Value(3)),
+            When(tramo_horario__dia_semana='J', then=Value(4)),
+            When(tramo_horario__dia_semana='V', then=Value(5)),
+            When(tramo_horario__dia_semana='S', then=Value(6)),
+            When(tramo_horario__dia_semana='D', then=Value(7)),
+            output_field=IntegerField(),
+        )
+    ).order_by('orden_dia', 'tramo_horario__hora_inicio', '-prioridad', 'profesor__nombre')
+
+    # --- PAGINACIÓN ---
+    paginator = Paginator(guardias_completas.distinct(), 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Conservar filtros en la paginación
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    url_params = query_params.urlencode()
+
+    contexto = {
+        'page_obj': page_obj,
+        'url_params': url_params,
+        'form': form,
+        'is_edit': bool(guardia_instancia),
+        'centro': centro,
+        'dias_choices': TramoHorario.DIAS_CHOICES,
+        'etapas_list': Etapa.objects.filter(centro=centro),
+        'profesores_list': Profesor.objects.filter(centro=centro),
+        'current_filters': request.GET,
+    }
+    return render(request, 'gestionar_guardias.html', contexto)
+
+
+@login_required
+def gestionar_profesores(request):
+    centro = obtener_centro_usuario(request)
+    if not centro:
+        messages.error(request, "Selecciona un centro antes de gestionar el profesorado.")
+        return redirect('centro_datos')
+
+    # --- LÓGICA DE EDICIÓN (GET) ---
+    profesor_edit_id = request.GET.get('edit')
+    profesor_instancia = None
+    if profesor_edit_id:
+        profesor_instancia = get_object_or_404(Profesor, id=profesor_edit_id, centro=centro)
+
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'delete':
+            profesor_id = request.POST.get('profesor_id')
+            profesor_a_borrar = get_object_or_404(Profesor, id=profesor_id, centro=centro)
+            profesor_a_borrar.delete()
+            messages.success(request, "Profesor eliminado correctamente.")
+            return redirect('gestionar_profesores')
+
+        elif action == 'save':
+            form = ProfesorForm(request.POST, instance=profesor_instancia, centro=centro)
+            if form.is_valid():
+                nuevo_profesor = form.save(commit=False)
+                nuevo_profesor.centro = centro
+                try:
+                    nuevo_profesor.save()
+                    mensaje = "Datos del profesor actualizados con éxito." if profesor_instancia else "Profesor registrado con éxito."
+                    messages.success(request, mensaje)
+                    return redirect('gestionar_profesores')
+                except IntegrityError:
+                    messages.error(request,
+                                   "Error al guardar. Es posible que el usuario ya esté vinculado a otro profesor.")
+            else:
+                messages.error(request, "Revisa los errores en el formulario.")
+    else:
+        form = ProfesorForm(instance=profesor_instancia, centro=centro)
+
+    # --- CAPTURA DE FILTROS AVANZADOS (GET) ---
+    f_texto = request.GET.get('f_texto', '')
+    f_rol = request.GET.get('f_rol', '')
+
+    profesores_base = Profesor.objects.filter(centro=centro)
+
+    if f_texto:
+        profesores_base = profesores_base.filter(
+            Q(nombre__icontains=f_texto) |
+            Q(apellidos__icontains=f_texto) |
+            Q(abreviatura__icontains=f_texto)
+        )
+    if f_rol:
+        profesores_base = profesores_base.filter(rol=f_rol)
+
+    # --- LISTADO ORDENADO ---
+    profesores_completos = profesores_base.order_by('apellidos', 'nombre')
+
+    # --- PAGINACIÓN ---
+    paginator = Paginator(profesores_completos, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Conservar filtros en la paginación
+    query_params = request.GET.copy()
+    if 'page' in query_params:
+        del query_params['page']
+    url_params = query_params.urlencode()
+
+    contexto = {
+        'page_obj': page_obj,
+        'url_params': url_params,
+        'form': form,
+        'is_edit': bool(profesor_instancia),
+        'centro': centro,
+        'roles_choices': Profesor.ROLES_CHOICES,
+        'current_filters': request.GET,
+    }
+    return render(request, 'gestionar_profesores.html', contexto)
