@@ -88,6 +88,7 @@ class AusenciaPuntualForm(forms.ModelForm):
         if centro:
             self.fields['profesor'].queryset = Profesor.objects.filter(centro=centro).order_by('apellidos')
 
+
 class GestorUsuarioForm(forms.Form):
     # 1. Datos de Acceso (Django User)
     username = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
@@ -107,8 +108,7 @@ class GestorUsuarioForm(forms.Form):
 
     # 3. Campos para Profesor Existente
     profesor_existente = forms.ModelChoiceField(
-        # Filtramos: Solo profesores que NO tienen cuenta de usuario asignada
-        queryset=Profesor.objects.filter(usuario__isnull=True),
+        queryset=Profesor.objects.none(),  # Lo inicializamos vacío, lo llenamos en el __init__
         required=False,
         empty_label="--- Selecciona el profesor a vincular ---",
         widget=forms.Select(attrs={'class': 'form-select'})
@@ -128,15 +128,28 @@ class GestorUsuarioForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'})
     )
 
+    def __init__(self, *args, **kwargs):
+        # Capturamos el centro que le pasaremos desde la vista
+        self.centro = kwargs.pop('centro', None)
+        super().__init__(*args, **kwargs)
+
+        if self.centro:
+            # Filtramos: Solo profesores del centro del admin que NO tienen cuenta asignada
+            self.fields['profesor_existente'].queryset = Profesor.objects.filter(
+                centro=self.centro,
+                usuario__isnull=True
+            ).order_by('apellidos', 'nombre')
+
+            # Opcional: Si quieres que al crear un nuevo perfil también se pre-seleccione el centro del admin
+            self.fields['centro'].initial = self.centro
+
     def clean(self):
         cleaned_data = super().clean()
         tipo = cleaned_data.get('tipo')
 
-        # Comprobar si el username ya existe (User no es unique_together con email por defecto en Django)
         if User.objects.filter(username=cleaned_data.get('username')).exists():
             self.add_error('username', 'Este nombre de usuario ya está en uso.')
 
-        # Validación condicional según el radio button
         if tipo == 'existente':
             if not cleaned_data.get('profesor_existente'):
                 self.add_error('profesor_existente', 'Debes seleccionar un profesor para vincular.')
@@ -401,20 +414,16 @@ class HorarioGuardiaForm(forms.ModelForm):
 class ProfesorForm(forms.ModelForm):
     class Meta:
         model = Profesor
-        fields = ['nombre', 'apellidos', 'abreviatura', 'email', 'rol', 'usuario']
+        fields = ['nombre', 'apellidos', 'abreviatura', 'email', 'rol'] # <-- Quitamos 'usuario'
         widgets = {
             'nombre': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: Laura'}),
             'apellidos': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: García López'}),
             'abreviatura': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej: LGL'}),
             'email': forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'correo@colegio.com'}),
             'rol': forms.Select(attrs={'class': 'form-select'}),
-            'usuario': forms.Select(attrs={'class': 'form-select select-buscador'}),
+            # Ya no necesitamos el widget de usuario aquí
         }
 
     def __init__(self, *args, **kwargs):
         self.centro = kwargs.pop('centro', None)
         super().__init__(*args, **kwargs)
-
-        # Opcional: Podrías filtrar los usuarios para que solo salgan los que no tienen profesor asignado,
-        # pero por ahora dejamos todos los activos disponibles.
-        self.fields['usuario'].queryset = User.objects.filter(is_active=True).order_by('username')

@@ -926,13 +926,15 @@ def asignar_guardia(request, registro_id):
 @login_required
 @rol_requerido(['ADMIN'])
 def crear_cuenta_usuario(request):
+    # Obtenemos el centro del admin logueado
+    centro_actual = obtener_centro_usuario(request)
+
     if request.method == 'POST':
-        form = GestorUsuarioForm(request.POST)
+        # Le pasamos el centro al formulario
+        form = GestorUsuarioForm(request.POST, centro=centro_actual)
         if form.is_valid():
             try:
-                # Transacción atómica: Si falla algo, revierte los cambios (no crea un User fantasma)
                 with transaction.atomic():
-                    # 1. Crear el usuario (Django cifra la contraseña automáticamente con create_user)
                     nuevo_user = User.objects.create_user(
                         username=form.cleaned_data['username'],
                         email=form.cleaned_data['email'],
@@ -941,11 +943,9 @@ def crear_cuenta_usuario(request):
 
                     tipo = form.cleaned_data['tipo']
 
-                    # 2. Lógica según la opción elegida
                     if tipo == 'existente':
                         profesor = form.cleaned_data['profesor_existente']
                         profesor.usuario = nuevo_user
-                        # Sincronizamos el email del perfil si no lo tenía
                         if not profesor.email:
                             profesor.email = form.cleaned_data['email']
                         profesor.save()
@@ -964,14 +964,15 @@ def crear_cuenta_usuario(request):
                         accion_msg = f"con nuevo perfil creado en {profesor.centro.nombre}"
 
                 messages.success(request, f"✅ Cuenta '{nuevo_user.username}' generada exitosamente y {accion_msg}.")
-                return redirect('crear_cuenta_usuario')  # Recargar el formulario limpio
+                return redirect('crear_cuenta_usuario')
 
             except IntegrityError:
                 messages.error(request, "Hubo un error de integridad (Posiblemente el email o username ya existan).")
             except Exception as e:
                 messages.error(request, f"Error crítico al guardar: {e}")
     else:
-        form = GestorUsuarioForm()
+        # En GET, también le pasamos el centro para que cargue bien el desplegable
+        form = GestorUsuarioForm(centro=centro_actual)
 
     return render(request, 'crear_cuenta.html', {'form': form})
 
