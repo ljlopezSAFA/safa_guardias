@@ -9,24 +9,49 @@
                     <i class="bi bi-arrow-left me-1"></i> Volver al Inicio
                 </a>
                 <h3 class="fw-bold mb-0">Planificador Avanzado de Guardias</h3>
-                <p class="text-muted small">Consulta y gestiona ausencias para cualquier fecha</p>
+                <p class="text-muted small">Consulta y gestiona ausencias filtradas por bloque de etapa y tramo</p>
             </div>
         </div>
 
         <div class="row g-4 mb-4">
             <div class="col-lg-3">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
                     <div class="card-body p-4 d-flex flex-column justify-content-center">
-                        <label for="fecha_consulta" class="form-label fw-bold small text-uppercase text-muted mb-2">
-                            <i class="bi bi-calendar-event me-1"></i> Seleccionar Fecha
-                        </label>
-                        <form method="get" id="form-fecha">
-                            <input type="date" id="fecha_consulta" name="fecha" 
-                                   class="form-control form-control-lg bg-light border-0 shadow-none fw-bold" 
-                                   value="{{ fecha_consulta|date:'Y-m-d' }}" 
-                                   onchange="document.getElementById('form-fecha').submit();">
-                            <input type="hidden" name="tramo" value="{{ tramo_seleccionado.id|default:'' }}">
+
+                        <form method="get" id="form-filtros">
+                            <input type="hidden" name="tramo" id="input-tramo"
+                                   value="{{ tramo_seleccionado.id|default:'' }}">
+
+                            <div class="mb-4">
+                                <label for="fecha_consulta"
+                                       class="form-label fw-bold small text-uppercase text-muted mb-2">
+                                    <i class="bi bi-calendar-event me-1 text-primary"></i> Fecha
+                                </label>
+                                <input type="date" id="fecha_consulta" name="fecha"
+                                       class="form-control form-control-lg bg-light border-0 shadow-none fw-bold text-secondary"
+                                       value="{{ fecha_consulta|date:'Y-m-d' }}"
+                                       onchange="document.getElementById('form-filtros').submit();">
+                            </div>
+
+                            <div>
+                                <label for="grupo_etapas"
+                                       class="form-label fw-bold small text-uppercase text-muted mb-2">
+                                    <i class="bi bi-diagram-3 me-1 text-primary"></i> Bloque Horario
+                                </label>
+                                <select id="grupo_etapas" name="grupo_etapas"
+                                        class="form-select form-select-lg bg-light border-0 shadow-none fw-semibold text-secondary"
+                                        onchange="document.getElementById('input-tramo').value=''; document.getElementById('form-filtros').submit();">
+                                    <option value="">Todos los tramos</option>
+                                    <option value="inf_pri" {% if grupo_etapas == 'inf_pri' %}selected{% endif %}>
+                                        Infantil y Primaria
+                                    </option>
+                                    <option value="eso_esno" {% if grupo_etapas == 'eso_esno' %}selected{% endif %}>ESO
+                                        y ESNO
+                                    </option>
+                                </select>
+                            </div>
                         </form>
+
                     </div>
                 </div>
             </div>
@@ -34,18 +59,40 @@
             <div class="col-lg-9">
                 <div class="card border-0 shadow-sm rounded-4 h-100">
                     <div class="card-body p-4 d-flex flex-column justify-content-center">
-                        <label class="form-label fw-bold small text-uppercase text-muted mb-3">
-                            <i class="bi bi-clock me-1"></i> Tramos del día
-                        </label>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <label class="form-label fw-bold small text-uppercase text-muted mb-0">
+                                <i class="bi bi-clock me-1 text-primary"></i> Tramos Horarios Disponibles
+                            </label>
+                            {% if grupo_etapas == 'inf_pri' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="bi bi-funnel-fill me-1"></i> Infantil / Primaria
+                                </span>
+                            {% elif grupo_etapas == 'eso_esno' %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-2">
+                                    <i class="bi bi-funnel-fill me-1"></i> ESO / ESNO
+                                </span>
+                            {% endif %}
+                        </div>
+
                         <div class="d-flex flex-wrap gap-2">
                             {% for tramo in tramos_del_dia %}
-                                <a href="?fecha={{ fecha_consulta|date:'Y-m-d' }}&tramo={{ tramo.id }}" 
-                                   class="btn rounded-pill px-4 shadow-sm {% if tramo_seleccionado and tramo_seleccionado.id == tramo.id %}btn-safa fw-bold{% else %}btn-light border text-muted{% endif %}">
+                                <a href="?fecha={{ fecha_consulta|date:'Y-m-d' }}&grupo_etapas={{ grupo_etapas|default:'' }}&tramo={{ tramo.id }}"
+                                   class="btn rounded-pill px-4 shadow-sm position-relative {% if tramo_seleccionado and tramo_seleccionado.id == tramo.id %}btn-safa text-white fw-bold{% else %}btn-light border text-muted{% endif %}">
                                     {{ tramo.hora_inicio|time:"H:i" }} - {{ tramo.hora_fin|time:"H:i" }}
+
+                                    {% for key, info in info_tramos.items %}
+                                        {% if key == tramo.id and info.pendientes > 0 %}
+                                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"
+                                                  title="Ausencias pendientes">
+                                                <span class="visually-hidden">Alertas</span>
+                                            </span>
+                                        {% endif %}
+                                    {% endfor %}
                                 </a>
                             {% empty %}
-                                <div class="text-muted w-100 py-2">
-                                    <i class="bi bi-info-circle me-1"></i> No hay tramos lectivos configurados para este día.
+                                <div class="text-muted w-100 py-3 bg-light rounded-3 text-center border border-dashed">
+                                    <i class="bi bi-info-circle fs-4 d-block mb-2 text-secondary opacity-50"></i>
+                                    No hay tramos lectivos configurados para este día en el bloque seleccionado.
                                 </div>
                             {% endfor %}
                         </div>
@@ -55,121 +102,136 @@
         </div>
 
         {% if tramo_seleccionado %}
-        <div class="row g-4">
-            
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
-                        <h5 class="fw-bold mb-0">
-                            <i class="bi bi-list-task text-primary me-2"></i>Estado de Guardias
-                        </h5>
-                    </div>
-                    <div class="card-body px-4 pt-3">
-                        <p class="text-muted small mb-3">
-                            Gestión para el tramo <strong>{{ tramo_seleccionado.hora_inicio|time:"H:i" }} - {{ tramo_seleccionado.hora_fin|time:"H:i" }}</strong>
-                        </p>
-                        
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle table-panel">
-                                <thead class="table-light">
-                                <tr>
-                                    <th>Profesor/a Ausente</th>
-                                    <th>Grupo</th>
-                                    <th>Aula</th>
-                                    <th>Estado</th>
-                                    <th>Asignado</th>
-                                    <th class="text-end">Acción</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for g in guardias_tramo %}
+            <div class="row g-4">
+
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+                            <h5 class="fw-bold mb-0">
+                                <i class="bi bi-list-task text-primary me-2"></i>Ausencias a Cubrir
+                            </h5>
+                        </div>
+                        <div class="card-body px-4 pt-3">
+                            <p class="text-muted small mb-3">
+                                Gestión para el tramo <strong>{{ tramo_seleccionado.hora_inicio|time:"H:i" }}
+                                - {{ tramo_seleccionado.hora_fin|time:"H:i" }}</strong>
+                            </p>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle table-panel">
+                                    <thead class="table-light text-secondary small">
                                     <tr>
-                                        <td>
-                                            <div class="fw-bold text-dark mb-1">
-                                                {{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.
-                                            </div>
-                                            {% if g.motivo_ausencia %}
-                                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25" style="font-size: 0.70rem; font-weight: 500;">
+                                        <th>Profesor/a Ausente</th>
+                                        <th>Grupo</th>
+                                        <th>Aula</th>
+                                        <th>Estado</th>
+                                        <th>Asignado</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for g in guardias_tramo %}
+                                        <tr>
+                                            <td>
+                                                <div class="fw-bold text-dark mb-1">
+                                                    {{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.
+                                                </div>
+                                                {% if g.motivo_ausencia %}
+                                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25"
+                                                          style="font-size: 0.70rem; font-weight: 500;">
                                                     <i class="bi bi-info-circle me-1"></i>{{ g.motivo_ausencia }}
                                                 </span>
-                                            {% endif %}
-                                        </td>
-                                        <td>{{ g.grupo.nombre }}</td>
-                                        <td><i class="bi bi-door-open text-muted"></i> {{ g.aula.abrev }}</td>
-                                        <td>
-                                            {% if g.estado == 'PENT' %}
-                                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill">Pendiente</span>
-                                            {% elif g.estado == 'AUTO' %}
-                                                <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill">Autogestión</span>
-                                            {% else %}
-                                                <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill">
-                                                    <i class="bi bi-check2-circle"></i> Cubierta
+                                                {% endif %}
+                                            </td>
+                                            <td class="fw-semibold text-secondary">{{ g.grupo.nombre }}</td>
+                                            <td><i class="bi bi-door-open text-muted me-1"></i>{{ g.aula.abrev }}</td>
+                                            <td>
+                                                {% if g.estado == 'PENT' %}
+                                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2">Pendiente</span>
+                                                {% elif g.estado == 'AUTO' %}
+                                                    <span class="badge bg-info bg-opacity-10 text-info border border-info rounded-pill px-2">Autogestión</span>
+                                                {% else %}
+                                                    <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2">
+                                                    <i class="bi bi-check2-circle me-1"></i>Cubierta
                                                 </span>
-                                            {% endif %}
-                                        </td>
-                                        <td class="small fw-bold">{{ g.profesor_guardia.abreviatura|default:"-" }}</td>
-                                        <td class="text-end">
-                                            {% if g.estado == 'PENT' %}
-                                                <a href="{% url 'asignar_guardia' g.id %}" class="btn btn-sm btn-safa-danger px-3 shadow-sm">Asignar</a>
-                                            {% else %}
-                                                <button class="btn btn-sm btn-safa-light border px-2">Editar</button>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                {% empty %}
-                                    <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
-                                            <i class="bi bi-check-circle-fill fs-1 text-success opacity-25 d-block mb-3"></i>
-                                            No hay ausencias programadas ni detectadas para este tramo.
-                                        </td>
-                                    </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
+                                                {% endif %}
+                                            </td>
+                                            <td class="small fw-bold text-primary">{{ g.profesor_guardia.abreviatura|default:"-" }}</td>
+                                            <td class="text-end">
+                                                {% if g.estado == 'PENT' %}
+                                                    <a href="{% url 'asignar_guardia' g.id %}"
+                                                       class="btn btn-sm btn-safa-danger px-3 shadow-sm rounded-pill fw-bold">Asignar</a>
+                                                {% else %}
+                                                    <button class="btn btn-sm btn-light border px-3 rounded-pill text-muted">
+                                                        Editar
+                                                    </button>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="6" class="text-center py-5 text-muted">
+                                                <i class="bi bi-shield-check fs-1 text-success opacity-25 d-block mb-3"></i>
+                                                <p class="mb-0 fw-semibold">Todo bajo control</p>
+                                                <small>No hay ausencias programadas ni detectadas para este
+                                                    tramo.</small>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                        <h5 class="fw-bold mb-0 icon-safa">
-                            <i class="bi bi-person-badge me-2"></i>Disponibilidad
-                        </h5>
-                        <p class="text-muted small mt-1 mb-0">Candidatos libres en este tramo</p>
-                    </div>
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm rounded-4 h-100">
+                        <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
+                            <h5 class="fw-bold mb-0 text-dark">
+                                <i class="bi bi-person-badge text-success me-2"></i>Personal Libre
+                            </h5>
+                            <p class="text-muted small mt-1 mb-0">Candidatos disponibles en este tramo</p>
+                        </div>
 
-                    <div class="card-body p-0 mt-3 d-flex flex-column">
-                        <div class="list-group list-group-flush border-top flex-grow-1" style="max-height: 500px; overflow-y: auto;">
-                            {% for profe in profesores_disponibles %}
-                                <div class="list-group-item border-0 p-3 d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center">
-                                        <div class="rounded-circle icon-safa bg-opacity-10 text-primary border border-primary d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm" style="width: 40px; height: 40px; font-size: 0.9rem; letter-spacing: 1px;">
-                                            {{ profe.nombre|slice:":1" }}{{ profe.apellidos|slice:":1" }}
+                        <div class="card-body p-0 mt-3 d-flex flex-column border-top">
+                            <div class="list-group list-group-flush flex-grow-1"
+                                 style="max-height: 500px; overflow-y: auto;">
+                                {% for profe in profesores_disponibles %}
+                                    <div class="list-group-item border-bottom-0 border-top p-3 d-flex justify-content-between align-items-center bg-transparent">
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-success bg-opacity-10 text-success border border-success d-flex align-items-center justify-content-center me-3 fw-bold shadow-sm"
+                                                 style="width: 40px; height: 40px; font-size: 0.9rem; letter-spacing: 1px;">
+                                                {{ profe.nombre|slice:":1" }}{{ profe.apellidos|slice:":1" }}
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-0 fw-bold small text-dark">{{ profe.apellidos }}, {{ profe.nombre }}</h6>
+                                                {% if profe.tipo_guardia %}
+                                                    <small class="text-muted"
+                                                           style="font-size: 0.70rem;">{{ profe.tipo_guardia }}</small>
+                                                {% endif %}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <h6 class="mb-0 fw-bold small">{{ profe.apellidos }}, {{ profe.nombre }}</h6>
-                                        </div>
-                                    </div>
-                                    {% if profe.porcentaje %}
-                                        <span class="badge {% if profe.porcentaje >= 80 %}bg-success{% elif profe.porcentaje >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill shadow-sm" style="font-size: 0.75rem;">
+                                        {% if profe.porcentaje %}
+                                            <span class="badge {% if profe.porcentaje >= 80 %}bg-success{% elif profe.porcentaje >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill shadow-sm"
+                                                  style="font-size: 0.75rem;">
                                             {{ profe.porcentaje }}%
                                         </span>
-                                    {% endif %}
-                                </div>
-                            {% empty %}
-                                <div class="p-4 text-center text-muted">
-                                    <i class="bi bi-person-slash d-block fs-2 mb-2"></i>
-                                    Sin personal libre detectado para este tramo.
-                                </div>
-                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                {% empty %}
+                                    <div class="p-5 text-center text-muted">
+                                        <i class="bi bi-person-slash d-block fs-1 opacity-25 mb-3"></i>
+                                        <p class="mb-0 fw-semibold">Sin personal disponible</p>
+                                        <small>No hay profesores libres para cubrir guardias en este tramo.</small>
+                                    </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-        </div>
+            </div>
         {% endif %}
 
     </main>

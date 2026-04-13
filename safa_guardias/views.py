@@ -747,14 +747,13 @@ def obtener_profesores_disponibles(tramo, fecha, centro):
     return disponibles
 
 
-# --- VISTAS ---
-
 @login_required
 def gestion_guardias_global(request):
     centro = obtener_centro_usuario(request)
 
     fecha_str = request.GET.get('fecha')
     tramo_id = request.GET.get('tramo')
+    grupo_etapas = request.GET.get('grupo_etapas') # <-- Nuevo parámetro agrupado
 
     if fecha_str:
         try:
@@ -767,9 +766,28 @@ def gestion_guardias_global(request):
     dias_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V', 5: 'S', 6: 'D'}
     dia_sem = dias_map[fecha_consulta.weekday()]
 
-    # Tramos del día para este centro
+    # Tramos del día para este centro base
     tramos_del_dia = TramoHorario.objects.filter(centro=centro, dia_semana=dia_sem).order_by('hora_inicio')
 
+    # --- FILTRO AGRUPADO POR BLOQUES DE ETAPA ---
+    if grupo_etapas == 'inf_pri':
+        # Buscamos tramos vinculados a etapas que contengan Infantil o Primaria
+        tramos_del_dia = tramos_del_dia.filter(
+            Q(etapas__nombre__icontains='infantil') |
+            Q(etapas__nombre__icontains='primaria')
+        ).distinct()
+    elif grupo_etapas == 'eso_esno':
+        # Buscamos tramos vinculados a ESO, Bachillerato, FP, etc.
+        tramos_del_dia = tramos_del_dia.filter(
+            Q(etapas__nombre__icontains='eso') |
+            Q(etapas__nombre__icontains='secundaria') |
+            Q(etapas__nombre__icontains='bachillerato') |
+            Q(etapas__nombre__icontains='esno') |
+            Q(etapas__nombre__icontains='ciclo') |
+            Q(etapas__nombre__icontains='fp')
+        ).distinct()
+
+    # Validar el tramo seleccionado (si cambiamos de bloque, el tramo viejo se resetea)
     tramo_seleccionado = None
     if tramo_id:
         tramo_seleccionado = tramos_del_dia.filter(id=tramo_id).first()
@@ -777,14 +795,14 @@ def gestion_guardias_global(request):
     if not tramo_seleccionado and tramos_del_dia.exists():
         tramo_seleccionado = tramos_del_dia.first()
 
-    # Función que asumo tienes en otro lado para generar los registros vacíos
+    # Generar registros vacíos (tu función externa)
     generar_guardias_del_dia(fecha_consulta, centro)
 
-    # Guardias de ese centro (filtradas por el centro del profesor ausente)
+    # Guardias de ese centro
     guardias_dia = RegistroGuardia.objects.filter(
-        profesor_ausente__centro=centro,  # CORREGIDO
+        profesor_ausente__centro=centro,
         fecha=fecha_consulta
-    ).select_related('profesor_ausente', 'grupo', 'tramo_horario')
+    ).select_related('profesor_ausente', 'grupo', 'tramo_horario', 'aula')
 
     guardias_tramo = guardias_dia.filter(tramo_horario=tramo_seleccionado) if tramo_seleccionado else []
 
@@ -796,7 +814,6 @@ def gestion_guardias_global(request):
         pendientes=Count('id', filter=Q(estado='PENT')),
         total=Count('id')
     )
-
     info_tramos = {item['tramo_horario']: item for item in resumen_tramos}
 
     context = {
@@ -806,9 +823,9 @@ def gestion_guardias_global(request):
         'guardias_tramo': guardias_tramo,
         'profesores_disponibles': disponibles,
         'info_tramos': info_tramos,
+        'grupo_etapas': grupo_etapas, # Pasamos el valor actual para mantener seleccionado el select
     }
     return render(request, 'gestion_guardias_global.html', context)
-
 
 
 

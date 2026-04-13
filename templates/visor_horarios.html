@@ -7,18 +7,47 @@
             --recreo-tarde-bg: #e0f2fe;
             --color-texto-principal: #1e293b;
             --borde-tabla: #e2e8f0;
+            /* Si tienes la variable definida en tu global, usará esa, si no, usa este azul como fallback */
+            --safa-blue: #2563eb;
         }
 
-        .table-horario { table-layout: fixed; }
+        /* Layout Estilo Pro */
+        .sidebar-filters {
+            position: sticky;
+            top: 20px;
+        }
+
+        /* TABS PERSONALIZADAS SAFA-BLUE (Fuerza máxima contra Bootstrap) */
+        #pills-tab {
+            --bs-nav-pills-link-active-bg: var(--safa-blue) !important;
+        }
+        #pills-tab .nav-link.active {
+            background-color: var(--safa-blue) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15) !important;
+        }
+        #pills-tab .nav-link {
+            color: #64748b !important;
+            transition: all 0.2s ease;
+        }
+        #pills-tab .nav-link:hover:not(.active) {
+            background-color: rgba(0, 0, 0, 0.03) !important;
+            color: var(--safa-blue) !important;
+        }
+
+        /* Estilos de la Tabla de Horarios */
+        .table-horario { table-layout: fixed; border-collapse: separate; border-spacing: 0; }
         .table-horario thead th {
-            background-color: #2563eb;
+            background-color: var(--safa-blue);
             color: white;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-transform: uppercase;
             letter-spacing: 1px;
-            padding: 15px 10px;
+            padding: 12px;
             border: none;
         }
+        .table-horario thead th:first-child { border-radius: 12px 0 0 0; }
+        .table-horario thead th:last-child { border-radius: 0 12px 0 0; }
 
         .hora-col {
             background-color: #f8fafc;
@@ -26,228 +55,336 @@
             color: var(--color-texto-principal);
             border-right: 2px solid var(--borde-tabla) !important;
             vertical-align: middle;
+            width: 100px;
         }
 
         .recreo-row {
             background-color: var(--recreo-bg) !important;
             font-weight: 800;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #856404;
             text-transform: uppercase;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
         }
-
         .recreo-tarde { background-color: var(--recreo-tarde-bg) !important; color: #0369a1; }
 
+        /* Cards de Materias */
         .clase-card {
-            cursor: pointer; transition: all 0.2s ease; border: 1px solid rgba(0, 0, 0, 0.05);
-            height: 100%; min-height: 60px; display: flex; flex-direction: column; justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            min-height: 55px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
         }
-        .clase-card:hover { transform: scale(1.03) translateY(-2px); box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1) !important; z-index: 10; position: relative; }
-        .guardia-card { background-color: #fef2f2; border-left: 5px solid #ef4444; color: #991b1b; border-radius: 0.375rem; height: 100%; min-height: 60px; display: flex; flex-direction: column; justify-content: center; padding: 0.5rem; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-        .materia-titulo { font-size: 0.9rem; font-weight: 700; margin-bottom: 2px; }
-        .materia-detalles { font-size: 0.75rem; opacity: 0.85; display: flex; justify-content: center; gap: 5px; }
+        .clase-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important;
+            z-index: 5;
+        }
+
+        .guardia-card {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #991b1b;
+            border-radius: 8px;
+            padding: 6px;
+            font-size: 0.8rem;
+        }
+
+        .materia-titulo { font-size: 0.85rem; font-weight: 800; line-height: 1.1; margin-bottom: 2px; }
+        .materia-detalles { font-size: 0.7rem; opacity: 0.9; font-weight: 600; }
+
+        /* Personalización de Inputs estilo Pro */
+        .form-label-pro {
+            font-size: 0.7rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+        }
+        .input-group-pro {
+            background: #f1f5f9;
+            border-radius: 12px;
+            padding: 10px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .input-group-pro:focus-within {
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .select-pro {
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            color: #1e293b;
+            padding: 0;
+            width: 100%;
+            outline: none;
+            box-shadow: none;
+        }
+        .select-pro:focus {
+            box-shadow: none;
+            background: transparent;
+            outline: none;
+        }
     </style>
 {% endblock %}
 
 {% block body %}
-    <div class="container-fluid py-4">
+    <main class="container-fluid py-4">
 
-        <div class="card shadow-sm border-0 mb-4 rounded-4">
-            <div class="card-body bg-light rounded-4">
-                <div class="mb-3 pb-3 border-bottom d-flex gap-4">
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="modoBusqueda" id="modoProfe" value="profe" onchange="toggleModoBusqueda()">
-                        <label class="form-check-label fw-bold text-dark" for="modoProfe"> Buscar por Profesor</label>
-                    </div>
-                    <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="modoBusqueda" id="modoGrupo" value="grupo" onchange="toggleModoBusqueda()">
-                        <label class="form-check-label fw-bold text-dark" for="modoGrupo"> Buscar por Grupo</label>
-                    </div>
-                </div>
-
-                <form method="get" id="filterForm" class="row g-3 align-items-end">
-                    <div id="bloqueProfe" class="col-md-5" style="display: none;">
-                        <label class="form-label small fw-bold text-muted">SELECCIONAR PROFESOR</label>
-                        <select name="profesor" id="profesorSelect" class="form-select border-0 shadow-sm" onchange="this.form.submit()">
-                            <option value="">Buscar profesor...</option>
-                            {% for p in profesores %}
-                                <option value="{{ p.id }}" {% if profesor_seleccionado == p.id %}selected{% endif %}>{{ p.apellidos }}, {{ p.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div id="bloqueGrupoEtapa" class="col-md-4" style="display: none;">
-                        <label class="form-label small fw-bold text-muted">1. FILTRAR POR ETAPA</label>
-                        <select name="etapa" id="etapaSelect" class="form-select border-0 shadow-sm" onchange="filterGroups()">
-                            <option value="">Todas las etapas...</option>
-                            {% for e in etapas %}
-                                <option value="{{ e.id }}" {% if etapa_seleccionada_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div id="bloqueGrupo" class="col-md-5" style="display: none;">
-                        <label class="form-label small fw-bold text-muted">2. SELECCIONAR GRUPO</label>
-                        <select name="grupo" id="grupoSelect" class="form-select border-0 shadow-sm" onchange="this.form.submit()">
-                            <option value="">Selecciona grupo...</option>
-                            {% for g in grupos %}
-                                <option value="{{ g.id }}" data-etapa="{{ g.etapa.id }}" {% if grupo_seleccionado == g.id %}selected{% endif %}>{{ g.curso }} {{ g.nombre }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </form>
+        <div class="d-flex justify-content-between align-items-center mb-4 px-3">
+            <div>
+                <h3 class="fw-bold mb-0">Visor de Horarios</h3>
+                <p class="text-muted small mb-0">Consulta la distribución horaria de profesores y grupos</p>
             </div>
+            {% if entidad_nombre %}
+                <div class="bg-white px-4 py-2 rounded-pill shadow-sm border fw-bold text-primary" style="color: var(--safa-blue) !important; border-color: var(--safa-blue) !important;">
+                    <i class="bi bi-eye-fill me-2"></i>{{ entidad_nombre }}
+                </div>
+            {% endif %}
         </div>
 
-        {% if horario_tabla %}
-            <div class="card shadow-sm border-0 mb-4 rounded-4">
-                <div class="card-header bg-white py-3 border-bottom-0 rounded-top-4 d-flex justify-content-between align-items-start">
-                    <div>
-                        <h5 class="mb-2 fw-bold">
-                            <i class="bi bi-calendar-grid-3x3 me-2 text-primary"></i>
-                            {% if entidad_nombre %}{{ entidad_nombre }}{% else %}Visor de Horarios{% endif %}
-                        </h5>
+        <div class="row g-4">
 
-                        {% if profesor_seleccionado %}
-                            <div class="d-flex flex-wrap gap-2 mt-2">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary px-3 py-2"><i class="bi bi-book me-1"></i> Clases: <strong>{{ num_clases }}h</strong></span>
-                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger px-3 py-2"><i class="bi bi-shield-exclamation me-1"></i> Guardias: <strong>{{ num_guardias }}h</strong></span>
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success px-3 py-2"><i class="bi bi-clock-history me-1"></i> Total Lectivas: <strong>{{ total_horas }}h</strong></span>
+            <div class="col-lg-3">
+                <div class="sidebar-filters">
+                    <div class="card border-0 shadow-sm rounded-4">
+                        <div class="card-body p-4">
+
+                            <form method="get" id="filterForm">
+                                <div class="nav nav-pills nav-fill mb-4 bg-light p-1 rounded-3" id="pills-tab" role="tablist">
+                                    <button class="nav-link py-2 small fw-bold {% if not grupo_seleccionado %}active{% endif %}"
+                                            type="button" onclick="setModo('profe')">
+                                        <i class="bi bi-person-badge me-1"></i>Profesor
+                                    </button>
+                                    <button class="nav-link py-2 small fw-bold {% if grupo_seleccionado %}active{% endif %}"
+                                            type="button" onclick="setModo('grupo')">
+                                        <i class="bi bi-people me-1"></i>Grupo
+                                    </button>
+                                </div>
+
+                                <div id="bloqueProfe" style="display: {% if grupo_seleccionado %}none{% else %}block{% endif %};">
+                                    <div class="mb-4">
+                                        <label class="form-label-pro"><i class="bi bi-search me-2" style="color: var(--safa-blue);"></i>Buscar Profesor</label>
+                                        <div class="input-group-pro">
+                                            <input type="text" class="form-control select-pro" list="datalistProfesores" id="inputBuscarProfe"
+                                                   placeholder="Escribe para buscar..." autocomplete="off"
+                                                   value="{% for p in profesores %}{% if p.id == profesor_seleccionado %}{{ p.apellidos }}, {{ p.nombre }}{% endif %}{% endfor %}">
+
+                                            <datalist id="datalistProfesores">
+                                                {% for p in profesores %}
+                                                    <option data-value="{{ p.id }}" value="{{ p.apellidos }}, {{ p.nombre }}"></option>
+                                                {% endfor %}
+                                            </datalist>
+
+                                            <input type="hidden" name="profesor" id="hiddenProfesorId" value="{{ profesor_seleccionado|default:'' }}">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div id="bloqueGrupo" style="display: {% if grupo_seleccionado %}block{% else %}none{% endif %};">
+                                    <div class="mb-3">
+                                        <label class="form-label-pro"><i class="bi bi-filter me-2" style="color: var(--safa-blue);"></i>Etapa Educativa</label>
+                                        <div class="input-group-pro">
+                                            <select name="etapa" id="etapaSelect" class="form-select select-pro" onchange="filterGroups()">
+                                                <option value="">Todas las etapas</option>
+                                                {% for e in etapas %}
+                                                    <option value="{{ e.id }}" {% if etapa_seleccionada_id == e.id %}selected{% endif %}>{{ e.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label-pro"><i class="bi bi-grid-3x3 me-2" style="color: var(--safa-blue);"></i>Seleccionar Grupo</label>
+                                        <div class="input-group-pro">
+                                            <select name="grupo" id="grupoSelect" class="form-select select-pro" onchange="this.form.submit()">
+                                                <option value="">Selecciona grupo...</option>
+                                                {% for g in grupos %}
+                                                    <option value="{{ g.id }}" data-etapa="{{ g.etapa.id }}" {% if grupo_seleccionado == g.id %}selected{% endif %}>
+                                                        {{ g.curso }} {{ g.nombre }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <button type="button" onclick="window.location.href='?'" class="btn btn-light w-100 rounded-3 text-muted small fw-bold mt-2">
+                                    <i class="bi bi-x-circle me-2"></i>Limpiar filtros
+                                </button>
+                            </form>
+
+                            {% if profesor_seleccionado and horario_tabla %}
+                            <div class="mt-5 border-top pt-4">
+                                <label class="form-label-pro mb-3">Resumen de Carga</label>
+                                <div class="d-grid gap-2">
+                                    <div class="p-3 bg-opacity-10 rounded-3 border border-opacity-10" style="background-color: rgba(37, 99, 235, 0.1); border-color: rgba(37, 99, 235, 0.2);">
+                                        <small class="d-block fw-bold opacity-75" style="color: var(--safa-blue);">HORAS LECTIVAS</small>
+                                        <span class="fs-4 fw-bold" style="color: var(--safa-blue);">{{ num_clases }}h</span>
+                                    </div>
+                                    <div class="p-3 bg-danger bg-opacity-10 rounded-3 border border-danger border-opacity-10">
+                                        <small class="text-danger d-block fw-bold opacity-75">GUARDIAS</small>
+                                        <span class="fs-4 fw-bold text-danger">{{ num_guardias }}h</span>
+                                    </div>
+                                </div>
                             </div>
-                        {% endif %}
+                            {% endif %}
+
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="card shadow-lg border-0 rounded-4 overflow-hidden mb-0 m-3 mt-0">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-horario mb-0 text-center align-middle">
-                            <thead>
-                            <tr>
-                                <th style="width: 110px;">Horas</th>
-                                <th>Lunes</th>
-                                <th>Martes</th>
-                                <th>Miércoles</th>
-                                <th>Jueves</th>
-                                <th>Viernes</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {% for fila in horario_tabla %}
-                                <tr class="{% if fila.tramo.es_recreo %}recreo-row {% if fila.tramo.hora_inicio|time:'H' >= '15' %}recreo-tarde{% endif %}{% endif %}">
-                                    <td class="hora-col">
-                                        <span class="d-block fs-6">{{ fila.tramo.hora_inicio|time:"H:i" }}</span>
-                                        <span class="text-muted small fw-normal">{{ fila.tramo.hora_fin|time:"H:i" }}</span>
-                                    </td>
+            <div class="col-lg-9">
+                {% if horario_tabla %}
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-horario mb-0 text-center align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 100px;">Tramo</th>
+                                        <th>Lunes</th>
+                                        <th>Martes</th>
+                                        <th>Miércoles</th>
+                                        <th>Jueves</th>
+                                        <th>Viernes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                {% for fila in horario_tabla %}
+                                    <tr class="{% if fila.tramo.es_recreo %}recreo-row {% if fila.tramo.hora_inicio|time:'H' >= '15' %}recreo-tarde{% endif %}{% endif %}">
+                                        <td class="hora-col">
+                                            <div class="fs-6">{{ fila.tramo.hora_inicio|time:"H:i" }}</div>
+                                            <div class="text-muted small fw-normal">{{ fila.tramo.hora_fin|time:"H:i" }}</div>
+                                        </td>
 
-                                    {% if fila.tramo.es_recreo %}
-                                        <td colspan="5" class="align-middle py-3">☕ R E C R E O</td>
-                                    {% else %}
-                                        {% for celda in fila.celdas %}
-                                            <td class="p-2" style="width: 17.8%;">
-                                                <div class="d-flex flex-column gap-2 h-100">
-
-                                                    {% for clase in celda.clases %}
-                                                        <div class="clase-card p-2 rounded-3 shadow-sm"
-                                                             style="--hue: {% widthratio clase.materia.id 1 137 %}; background-color: hsl(var(--hue), 70%, 93%); border-left: 5px solid hsl(var(--hue), 70%, 45%); color: hsl(var(--hue), 70%, 20%);"
-                                                             data-bs-toggle="modal" data-bs-target="#claseModal"
-                                                             data-materia="{{ clase.materia.nombre }}" data-profe="{{ clase.profesor.nombre }} {{ clase.profesor.apellidos }}"
-                                                             data-aula="{{ clase.aula.nombre }} ({{ clase.aula.pabellon|default:'Sin pabellón' }})"
-                                                             data-grupo="{{ clase.grupo.curso }} {{ clase.grupo.nombre }}" data-hora="{{ fila.tramo.hora_inicio|time:'H:i' }} - {{ fila.tramo.hora_fin|time:'H:i' }}">
-                                                            <div class="materia-titulo">{{ clase.materia.abrev }}</div>
-                                                            <div class="materia-detalles">
-                                                                {% if profesor_seleccionado %}
-                                                                    <span><i class="bi bi-people"></i> {{ clase.grupo.curso }}{{ clase.grupo.nombre }}</span>
-                                                                {% else %}
-                                                                    <span><i class="bi bi-person-badge"></i> {{ clase.profesor.abreviatura }}</span>
-                                                                {% endif %}
-                                                                <span>|</span>
-                                                                <span><i class="bi bi-door-open"></i> {{ clase.aula.abrev }}</span>
-                                                            </div>
-                                                        </div>
-                                                    {% endfor %}
-
-                                                    {% for guardia in celda.guardias %}
-                                                        <div class="guardia-card">
-                                                            <div class="materia-titulo text-danger"><i class="bi bi-shield-exclamation me-1"></i>{{ guardia.tipo_guardia }}</div>
-                                                            <div class="materia-detalles text-danger opacity-75 fw-bold">Prioridad: {{ guardia.prioridad }}</div>
-                                                        </div>
-                                                    {% endfor %}
-
-                                                    {% if not celda.clases and not celda.guardias %}
-                                                        <div class="text-muted small opacity-25 d-flex align-items-center justify-content-center h-100">-</div>
-                                                    {% endif %}
-
-                                                </div>
+                                        {% if fila.tramo.es_recreo %}
+                                            <td colspan="5" class="align-middle py-3">
+                                                <i class="bi bi-cup-hot me-2"></i> R E C R E O
                                             </td>
-                                        {% endfor %}
-                                    {% endif %}
-                                </tr>
-                            {% endfor %}
-                            </tbody>
-                        </table>
+                                        {% else %}
+                                            {% for celda in fila.celdas %}
+                                                <td class="p-1">
+                                                    <div class="d-flex flex-column gap-1">
+                                                        {% for clase in celda.clases %}
+                                                            <div class="clase-card p-2 rounded-3 shadow-sm"
+                                                                 style="--hue: {% widthratio clase.materia.id 1 137 %}; background-color: hsl(var(--hue), 70%, 96%); border-left: 4px solid hsl(var(--hue), 70%, 45%); color: hsl(var(--hue), 70%, 20%);"
+                                                                 data-bs-toggle="modal" data-bs-target="#claseModal"
+                                                                 data-materia="{{ clase.materia.nombre }}" data-profe="{{ clase.profesor.nombre }} {{ clase.profesor.apellidos }}"
+                                                                 data-aula="{{ clase.aula.nombre }}" data-grupo="{{ clase.grupo.curso }} {{ clase.grupo.nombre }}"
+                                                                 data-hora="{{ fila.tramo.hora_inicio|time:'H:i' }} - {{ fila.tramo.hora_fin|time:'H:i' }}">
+                                                                <div class="materia-titulo">{{ clase.materia.abrev }}</div>
+                                                                <div class="materia-detalles">
+                                                                    {% if profesor_seleccionado %}
+                                                                        <span>{{ clase.grupo.curso }}{{ clase.grupo.nombre }}</span>
+                                                                    {% else %}
+                                                                        <span>{{ clase.profesor.abreviatura }}</span>
+                                                                    {% endif %}
+                                                                    <span class="mx-1">|</span>
+                                                                    <span>{{ clase.aula.abrev }}</span>
+                                                                </div>
+                                                            </div>
+                                                        {% endfor %}
+
+                                                        {% for guardia in celda.guardias %}
+                                                            <div class="guardia-card shadow-sm">
+                                                                <div class="fw-bold"><i class="bi bi-shield-exclamation me-1"></i>{{ guardia.tipo_guardia }}</div>
+                                                            </div>
+                                                        {% endfor %}
+
+                                                        {% if not celda.clases and not celda.guardias %}
+                                                            <div class="py-3 opacity-0">-</div>
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </div>
+                {% else %}
+                    <div class="card border-0 shadow-sm rounded-4 h-100 d-flex align-items-center justify-content-center p-5 bg-white text-center">
+                        <div>
+                            <img src="https://illustrations.popsy.co/flat/searching.svg" alt="Buscando" style="width: 200px;" class="mb-4 opacity-75">
+                            <h4 class="fw-bold text-dark">Nada seleccionado</h4>
+                            <p class="text-muted">Utiliza el panel de la izquierda para buscar un<br>profesor o seleccionar un grupo específico.</p>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
-        {% else %}
-            <div class="text-center py-5 bg-white rounded-4 shadow-sm">
-                <i class="bi bi-calendar2-week display-1 text-muted opacity-25"></i>
-                <h4 class="text-muted mt-3 fw-light">Selecciona un grupo o profesor para visualizar su horario</h4>
-            </div>
-        {% endif %}
-    </div>
+        </div>
+    </main>
 
     <div class="modal fade" id="claseModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-body pt-0 text-center px-4">
-                    <i class="bi bi-journal-text icon-safa fs-1"></i>
-                    <h3 class="fw-bold mb-1 text-dark" id="modalMateria">Nombre de la Materia</h3>
-                    <span class="badge bg-light text-dark border px-3 py-2 mb-4 fs-6" id="modalHora"><i class="bi bi-clock me-2"></i>00:00 - 00:00</span>
+                <div class="modal-body p-4 text-center">
+                    <div class="bg-opacity-10 text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; background-color: rgba(37, 99, 235, 0.1); color: var(--safa-blue) !important;">
+                        <i class="bi bi-journal-bookmark fs-3"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1" id="modalMateria">Materia</h3>
+                    <p class="badge bg-light border px-3 py-2 mb-4 fs-6" id="modalHora" style="color: var(--safa-blue); border-color: rgba(37, 99, 235, 0.25) !important;">00:00 - 00:00</p>
+
                     <div class="row g-3 text-start">
                         <div class="col-12">
-                            <div class="p-3 bg-light rounded-3 d-flex align-items-center">
-                                <i class="bi bi-person-workspace fs-4 text-secondary me-3"></i>
-                                <div>
-                                    <label class="small text-muted d-block text-uppercase mb-0" style="font-size: 0.7rem;">Profesor/a</label>
-                                    <span class="fw-bold text-dark fs-6" id="modalProfe">Nombre del Profesor</span>
-                                </div>
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="form-label-pro mb-1">Docente</label>
+                                <span class="fw-bold d-block" id="modalProfe">-</span>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-3 bg-light rounded-3 h-100">
-                                <label class="small text-muted d-block text-uppercase mb-1" style="font-size: 0.7rem;"><i class="bi bi-geo-alt me-1"></i>Aula</label>
-                                <span class="fw-bold text-dark" id="modalAula">Nombre del Aula</span>
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="form-label-pro mb-1">Aula</label>
+                                <span class="fw-bold d-block" id="modalAula">-</span>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="p-3 bg-light rounded-3 h-100">
-                                <label class="small text-muted d-block text-uppercase mb-1" style="font-size: 0.7rem;"><i class="bi bi-people me-1"></i>Grupo</label>
-                                <span class="fw-bold text-dark" id="modalGrupo">Curso y Grupo</span>
+                            <div class="p-3 bg-light rounded-3">
+                                <label class="form-label-pro mb-1">Grupo</label>
+                                <span class="fw-bold d-block" id="modalGrupo">-</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer border-0 justify-content-center pb-4 pt-2">
-                    <button type="button" class="btn btn-secondary rounded-pill px-5" data-bs-dismiss="modal">Cerrar detalle</button>
+                    <button type="button" class="btn w-100 rounded-pill py-2 mt-4 fw-bold shadow-sm text-white" data-bs-dismiss="modal" style="background-color: var(--safa-blue); border-color: var(--safa-blue);">Entendido</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function toggleModoBusqueda() {
-            const isProfe = document.getElementById('modoProfe').checked;
-            document.getElementById('bloqueProfe').style.display = isProfe ? 'block' : 'none';
-            document.getElementById('bloqueGrupoEtapa').style.display = isProfe ? 'none' : 'block';
-            document.getElementById('bloqueGrupo').style.display = isProfe ? 'none' : 'block';
-            if (isProfe) {
+        // Cambiar entre modo Profe y Grupo
+        function setModo(modo) {
+            const bProfe = document.getElementById('bloqueProfe');
+            const bGrupo = document.getElementById('bloqueGrupo');
+
+            if (modo === 'profe') {
+                bProfe.style.display = 'block';
+                bGrupo.style.display = 'none';
                 document.getElementById('grupoSelect').value = "";
                 document.getElementById('etapaSelect').value = "";
             } else {
-                document.getElementById('profesorSelect').value = "";
+                bProfe.style.display = 'none';
+                bGrupo.style.display = 'block';
+                document.getElementById('inputBuscarProfe').value = "";
+                document.getElementById('hiddenProfesorId').value = "";
             }
+
+            event.currentTarget.parentElement.querySelectorAll('.nav-link').forEach(btn => btn.classList.remove('active'));
+            event.currentTarget.classList.add('active');
         }
 
+        // Filtro dinámico de grupos
         function filterGroups() {
             const etapaId = document.getElementById('etapaSelect').value;
             const grupoSelect = document.getElementById('grupoSelect');
@@ -255,30 +392,46 @@
 
             for (let i = 1; i < options.length; i++) {
                 const optEtapaId = options[i].getAttribute('data-etapa');
-                if (etapaId === "" || optEtapaId === etapaId) {
-                    options[i].hidden = false;
-                    options[i].disabled = false;
-                } else {
-                    options[i].hidden = true;
-                    options[i].disabled = true;
-                }
+                options[i].hidden = (etapaId !== "" && optEtapaId !== etapaId);
             }
             grupoSelect.value = "";
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            const profeSeleccionado = "{{ profesor_seleccionado|default:'' }}";
-            const grupoSeleccionado = "{{ grupo_seleccionado|default:'' }}";
+            // Lógica del BUSCADOR NATIVO (Datalist)
+            const inputBuscar = document.getElementById('inputBuscarProfe');
+            const hiddenInput = document.getElementById('hiddenProfesorId');
+            const form = document.getElementById('filterForm');
 
-            if (profeSeleccionado) {
-                document.getElementById('modoProfe').checked = true;
-            } else if (grupoSeleccionado) {
-                document.getElementById('modoGrupo').checked = true;
-            } else {
-                document.getElementById('modoProfe').checked = true;
-            }
-            toggleModoBusqueda();
+            inputBuscar.addEventListener('input', function(e) {
+                const val = this.value;
+                const list = document.getElementById('datalistProfesores');
+                const options = list.childNodes;
 
+                // Recorremos las opciones para ver si el texto coincide exactamente con alguna
+                for (let i = 0; i < options.length; i++) {
+                    if (options[i].value === val) {
+                        hiddenInput.value = options[i].getAttribute('data-value');
+                        form.submit();
+                        return;
+                    }
+                }
+
+                // Si el usuario borra todo el texto, limpiamos y recargamos
+                if (val === '') {
+                    hiddenInput.value = '';
+                    form.submit();
+                }
+            });
+
+            // Evitar que el Enter envíe el formulario si no hay match
+            inputBuscar.addEventListener('keydown', function(e) {
+                if(e.key === 'Enter') {
+                    e.preventDefault();
+                }
+            });
+
+            // Lógica del Modal
             const modal = document.getElementById('claseModal');
             if (modal) {
                 modal.addEventListener('show.bs.modal', function (event) {
@@ -287,7 +440,7 @@
                     document.getElementById('modalProfe').innerText = card.getAttribute('data-profe');
                     document.getElementById('modalAula').innerText = card.getAttribute('data-aula');
                     document.getElementById('modalGrupo').innerText = card.getAttribute('data-grupo');
-                    document.getElementById('modalHora').innerHTML = `<i class="bi bi-clock me-2"></i>${card.getAttribute('data-hora')}`;
+                    document.getElementById('modalHora').innerText = card.getAttribute('data-hora');
                 });
             }
         });

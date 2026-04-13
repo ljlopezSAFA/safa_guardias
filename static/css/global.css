@@ -392,3 +392,22 @@ a {
 a:hover {
     color: #003d7a;
 }
+
+/* --- PESTAÑAS (NAV-PILLS) GLOBAL SAFA --- */
+.nav-pills {
+    /* Fuerza a que el fondo activo use tu azul SAFA */
+    --bs-nav-pills-link-active-bg: var(--safa-blue) !important;
+    --bs-nav-pills-link-active-color: #ffffff !important;
+}
+
+/* Color de los enlaces no activos */
+.nav-pills .nav-link {
+    color: #6c757d; /* Gris para cuando no están seleccionados */
+    transition: all 0.2s ease;
+}
+
+/* Efecto hover limpio para los que NO están activos */
+.nav-pills .nav-link:hover:not(.active) {
+    color: var(--safa-blue);
+    background-color: var(--safa-light-blue);
+}
