@@ -72,7 +72,7 @@ class SalidaExcursionForm(forms.ModelForm):
 class AusenciaPuntualForm(forms.ModelForm):
     class Meta:
         model = AusenciaPuntual
-        fields = '__all__'
+        exclude = ['centro']
         widgets = {
             'fecha': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'class': 'form-control shadow-sm'}),
             'hora_inicio': forms.TimeInput(format='%H:%M', attrs={'type': 'time', 'class': 'form-control shadow-sm'}),

@@ -3,23 +3,30 @@
 {% block body %}
     <main class="container py-4">
 
-        <div class="dashboard-header p-4 mb-5 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
+        <div class="dashboard-header p-4 mb-4 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
             <div class="d-flex flex-column align-items-center align-items-md-start mb-4 mb-md-0">
-                <div class="clock-time" id="realtime-clock">--:--:--</div>
-                <div class="fs-5 date-text mt-2" id="realtime-date">Cargando fecha...</div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="clock-time" id="realtime-clock">--:--:--</div>
+                    <button onclick="window.location.reload();" class="btn btn-sm btn-light border shadow-sm text-muted rounded-circle" title="Actualizar datos" style="width: 35px; height: 35px;">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+                <div class="fs-6 date-text mt-1" id="realtime-date">Cargando fecha...</div>
             </div>
 
             <div class="text-center text-md-end">
-                <p class="mb-2 text-muted text-uppercase small fw-bold">Tramo Horario Actual</p>
+                <p class="mb-2 text-muted text-uppercase small fw-bold" style="letter-spacing: 1px;">Estado Actual</p>
 
                 {% if tramo_actual %}
-                    <div class="slot-badge shadow-sm">
-                        <i class="bi bi-clock-history fs-5"></i>
-                        {{ tramo_actual.hora_inicio|time:"H:i" }} - {{ tramo_actual.hora_fin|time:"H:i" }}
+                    <div class="slot-badge shadow-sm bg-white border border-primary">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="spinner-grow spinner-grow-sm text-primary" role="status" aria-hidden="true"></span>
+                            <span class="text-primary fw-bold">{{ tramo_actual.hora_inicio|time:"H:i" }} - {{ tramo_actual.hora_fin|time:"H:i" }}</span>
+                        </div>
                     </div>
                 {% else %}
-                    <div class="slot-badge inactive shadow-sm">
-                        <i class="bi bi-cup-hot fs-5"></i>
+                    <div class="slot-badge inactive shadow-sm border-0">
+                        <i class="bi bi-moon-stars fs-5 text-muted"></i>
                         Fuera de horario lectivo
                     </div>
                 {% endif %}
@@ -27,52 +34,56 @@
         </div>
 
         <div class="row g-4 mb-5">
+
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4 h-100">
-                    <div class="text-center mb-3">
-                        <i class="bi bi-people fs-1 icon-safa"></i>
+                <div class="card card-action shadow-sm p-4 h-100" style="border-top-color: var(--safa-blue);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <i class="bi bi-people fs-1" style="color: var(--safa-blue);"></i>
                     </div>
-                    <h5 class="text-center fw-bold">Profesorado</h5>
-                    <p class="text-muted text-center small mb-4">Información detallada sobre el cuerpo docente y perfiles.</p>
+                    <h5 class="fw-bold mt-2 text-dark">Profesorado</h5>
+                    <p class="text-muted small mb-4">Información detallada sobre el cuerpo docente y perfiles.</p>
                     <a href="{% url 'mostrar_profesores' %}" class="btn-safa w-100 mt-auto">Ver Profesores</a>
                 </div>
             </div>
 
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4 h-100">
-                    <div class="text-center mb-3">
-                        <i class="bi bi-table fs-1 icon-safa"></i>
+                <div class="card card-action shadow-sm p-4 h-100" style="border-top-color: var(--safa-blue);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <i class="bi bi-calendar3-range fs-1" style="color: var(--safa-blue);"></i>
                     </div>
-                    <h5 class="text-center fw-bold">Horarios</h5>
-                    <p class="text-muted text-center small mb-4">Consulta la ubicación de grupos y docentes.</p>
-                    <a href="{% url 'visor_horarios' %}" class="btn-safa w-100 mt-auto">Ver Horarios</a>
+                    <h5 class="fw-bold mt-2 text-dark">Horarios</h5>
+                    <p class="text-muted small mb-4">Consulta la ubicación y cuadrantes de grupos y docentes.</p>
+                    <a href="{% url 'visor_horarios' %}" class="btn-safa w-100 mt-auto">Visor de Horarios</a>
                 </div>
             </div>
 
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4 h-100">
-                    <div class="text-center mb-3">
-                        <div class="d-flex justify-content-center gap-2">
-                            <i class="bi bi-bus-front-fill fs-1 icon-safa"></i>
-                            <i class="bi bi-person-exclamation fs-1 icon-safa"></i>
-                        </div>
+                <div class="card card-action shadow-sm p-4 h-100" style="border-top-color: var(--safa-blue);">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <i class="bi bi-person-exclamation fs-1" style="color: #4a86b8;"></i>
+                        {% if ausencias_hoy > 0 %}
+                            <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 rounded-pill px-2 py-1 shadow-sm">
+                                <i class="bi bi-bell-fill me-1"></i>{{ ausencias_hoy }} Faltas hoy
+                            </span>
+                        {% endif %}
                     </div>
-                    <h5 class="text-center fw-bold">Excursiones y Ausencias</h5>
-                    <p class="text-muted text-center small mb-4">Gestiona las excursiones y la ausencia del profesorado.</p>
+                    <h5 class="fw-bold mt-2 text-dark">Ausencias</h5>
+                    <p class="text-muted small mb-4">Registra faltas puntuales, excursiones o bajas médicas.</p>
                     <a href="{% url 'gestion_ausencias' %}" class="btn-safa w-100 mt-auto">Gestionar Ausencias</a>
                 </div>
             </div>
 
             <div class="col-xl-3 col-md-6">
-                <div class="card card-action shadow-sm p-4 h-100 border-bottom border-4 border-primary">
-                    <div class="text-center mb-3">
-                        <i class="bi bi-database-fill-gear fs-1 icon-safa text-primary"></i>
+                <div class="card card-action shadow-sm p-4 h-100 bg-light" style="border-top-color: #6c757d;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <i class="bi bi-database-fill-gear fs-1 text-muted"></i>
                     </div>
-                    <h5 class="text-center fw-bold">Central de Datos</h5>
-                    <p class="text-muted text-center small mb-4">Gestión integral: Importar CSV, generar tramos horarios y registros.</p>
-                    <a href="{% url 'centro_datos' %}" class="btn-safa w-100 mt-auto fw-bold">Ir Centro de Datos</a>
+                    <h5 class="fw-bold mt-2 text-dark">Central de Datos</h5>
+                    <p class="text-muted small mb-4">Importar CSV, volcado horario y ajustes del sistema.</p>
+                    <a href="{% url 'centro_datos' %}" class="btn btn-outline-secondary w-100 mt-auto fw-bold">Ir a Central</a>
                 </div>
             </div>
+
         </div>
 
         <div class="row g-4">
@@ -83,21 +94,22 @@
                         <h5 class="fw-bold mb-0">
                             <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Grupos sin profesor
                         </h5>
-                        {% if conteo_pendientes > 0 %}
-                            <span class="badge bg-danger rounded-pill px-3">{{ conteo_pendientes }} Pendientes</span>
-                        {% endif %}
-                        <a href="{% url 'gestion_guardias_global' %}"
-                           class="btn btn-sm btn-safa shadow-sm rounded-pill px-3">
-                            <i class="bi bi-calendar-week me-1"></i> Planificador Avanzado
-                        </a>
+                        <div class="d-flex gap-2 align-items-center">
+                            {% if conteo_pendientes > 0 %}
+                                <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-3 py-2 shadow-sm">{{ conteo_pendientes }} Pendientes</span>
+                            {% endif %}
+                            <a href="{% url 'gestion_guardias_global' %}" class="btn btn-sm btn-safa shadow-sm rounded-pill px-3">
+                                Ver Planificador
+                            </a>
+                        </div>
                     </div>
+
                     <div class="card-body px-4 pt-3">
-                        <p class="text-muted small mb-3">Clases que requieren cobertura en este tramo horario.</p>
                         <div class="table-responsive">
                             <table class="table table-hover align-middle table-panel">
                                 <thead class="table-light">
                                 <tr>
-                                    <th>Profesor/a Ausente</th>
+                                    <th>Ausente</th>
                                     <th>Grupo</th>
                                     <th>Aula</th>
                                     <th>Estado</th>
@@ -110,35 +122,39 @@
                                     <tr>
                                         <td class="fw-bold text-dark">{{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.</td>
                                         <td>{{ g.grupo.nombre }}</td>
-                                        <td><i class="bi bi-door-open text-muted"></i> {{ g.aula.abrev }}</td>
+                                        <td><span class="badge bg-light text-dark border"><i class="bi bi-door-open me-1"></i>{{ g.aula.abrev }}</span></td>
                                         <td>
                                             {% if g.estado == 'PENT' %}
                                                 <span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill">Pendiente</span>
                                             {% else %}
                                                 <span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill">
-                                                    <i class="bi bi-check2-circle"></i> Cubierta
+                                                    <i class="bi bi-check2-circle me-1"></i>Cubierta
                                                 </span>
                                             {% endif %}
                                         </td>
                                         <td class="small fw-bold">{{ g.profesor_guardia.abreviatura|default:"-" }}</td>
                                         <td class="text-end">
                                             {% if g.estado == 'PENT' %}
-                                                <a href="{% url 'asignar_guardia' g.id %}"
-                                                   class="btn btn-sm btn-safa-danger px-3 shadow-sm">Asignar</a>
+                                                <a href="{% url 'asignar_guardia' g.id %}" class="btn btn-sm btn-safa-danger px-3 shadow-sm rounded-pill">Cubrir</a>
                                             {% else %}
-                                                <button class="btn btn-sm btn-safa-light border px-2">Detalles</button>
+                                                <button class="btn btn-sm btn-light border px-3 rounded-pill text-muted">Detalle</button>
                                             {% endif %}
                                         </td>
                                     </tr>
                                 {% empty %}
                                     <tr>
-                                        <td colspan="6" class="text-center py-5 text-muted">
-                                            <i class="bi bi-check-circle-fill fs-1 text-success opacity-25 d-block mb-3"></i>
-                                            {% if tramo_actual %}
-                                                No hay ausencias detectadas para este tramo.
-                                            {% else %}
-                                                No hay actividad lectiva en este momento.
-                                            {% endif %}
+                                        <td colspan="6" class="text-center py-5 border-0">
+                                            <div class="p-4 rounded-4 bg-success bg-opacity-10 d-inline-block border border-success border-opacity-25">
+                                                <i class="bi bi-cup-hot-fill fs-1 text-success d-block mb-2"></i>
+                                                <h6 class="fw-bold text-success mb-1">Todo bajo control</h6>
+                                                <span class="text-success opacity-75 small">
+                                                    {% if tramo_actual %}
+                                                        No hay guardias pendientes en este tramo.
+                                                    {% else %}
+                                                        No hay actividad lectiva en este momento.
+                                                    {% endif %}
+                                                </span>
+                                            </div>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -150,56 +166,56 @@
             </div>
 
             <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-                        <h5 class="fw-bold mb-0 icon-safa">
+                <div class="card border-0 shadow-sm rounded-4 h-100 flex-column d-flex">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-2 px-4">
+                        <h5 class="fw-bold mb-0" style="color: var(--safa-blue);">
                             <i class="bi bi-person-badge me-2"></i>Disponibilidad
                         </h5>
-                        <p class="text-muted small mt-1 mb-0">Personal disponible en el centro</p>
+                        <p class="text-muted small mt-1 mb-0">Personal libre en este momento</p>
                     </div>
 
-                    <div class="card-body p-0 mt-3 d-flex flex-column">
-
-                        <div class="list-group list-group-flush border-top flex-grow-1">
+                    <div class="card-body p-0 d-flex flex-column flex-grow-1 overflow-auto" style="max-height: 400px;">
+                        <div class="list-group list-group-flush border-top">
                             {% for profe in profesores_disponibles %}
-                                <div class="list-group-item border-0 p-3 d-flex justify-content-between align-items-center">
+                                <div class="list-group-item border-0 p-3 d-flex justify-content-between align-items-center prof-list-item">
                                     <div class="d-flex align-items-center">
-                                        <div class="rounded-circle bg-primary bg-opacity-10 text-primary border border-primary d-flex align-items-center justify-content-center me-3 fw-bold"
-                                             style="width: 40px; height: 40px; font-size: 0.9rem; letter-spacing: 1px;">
+                                        <div class="rounded-circle d-flex align-items-center justify-content-center me-3 fw-bold"
+                                             style="width: 38px; height: 38px; font-size: 0.8rem; background-color: var(--safa-light-blue); color: var(--safa-blue);">
                                             {{ profe.nombre|slice:":1" }}{{ profe.apellidos|slice:":1" }}
                                         </div>
                                         <div>
-                                            <h6 class="mb-0 fw-bold small">{{ profe.apellidos }}, {{ profe.nombre }}</h6>
-                                            <small class="text-muted">Libre / Guardia</small>
+                                            <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;">{{ profe.apellidos }}, {{ profe.nombre|slice:":1" }}.</h6>
+                                            <small class="text-muted" style="font-size: 0.75rem;">Guardia</small>
                                         </div>
                                     </div>
+
                                     {% if profe.porcentaje %}
-                                        <span class="badge {% if profe.porcentaje >= 80 %}bg-success{% elif profe.porcentaje >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill shadow-sm" style="font-size: 0.75rem;">
+                                        <span class="badge {% if profe.porcentaje >= 80 %}bg-success{% elif profe.porcentaje >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill shadow-sm" style="font-size: 0.7rem;">
                                             {{ profe.porcentaje }}%
                                         </span>
                                     {% else %}
-                                        <span class="badge bg-warning text-dark rounded-pill" style="font-size: 0.7rem;">En el centro</span>
+                                        <span class="badge bg-light text-dark border rounded-pill" style="font-size: 0.7rem;">Libre</span>
                                     {% endif %}
                                 </div>
                             {% empty %}
-                                <div class="p-4 text-center text-muted">
-                                    <i class="bi bi-info-circle d-block fs-2 mb-2"></i>
-                                    Sin personal libre detectado.
+                                <div class="p-5 text-center text-muted">
+                                    <i class="bi bi-emoji-frown fs-1 opacity-25 d-block mb-3"></i>
+                                    <span class="small fw-bold d-block">Sin personal libre</span>
+                                    <span class="small">No hay docentes disponibles ahora.</span>
                                 </div>
                             {% endfor %}
                         </div>
+                    </div>
 
-                        <div class="p-3 text-center bg-light border-top mt-auto">
-                            <a href="{% url 'visor_guardias' %}" class="text-decoration-none small fw-bold icon-safa">
-                                Ver cuadrante de guardias <i class="bi bi-arrow-right"></i>
-                            </a>
-                        </div>
+                    <div class="p-3 text-center bg-light border-top mt-auto rounded-bottom-4">
+                        <a href="{% url 'visor_guardias' %}" class="text-decoration-none small fw-bold" style="color: var(--safa-blue);">
+                            Ver cuadrante completo <i class="bi bi-arrow-right"></i>
+                        </a>
                     </div>
                 </div>
             </div>
 
         </div>
-
     </main>
 
     <script>

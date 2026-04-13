@@ -15,14 +15,13 @@ from django.core.paginator import Paginator
 
 
 # Create your views here.
-@login_required  # NUEVO: Protegemos la vista
+@login_required
 def pagina_inicio(request):
     centro = obtener_centro_usuario(request)
 
-    # Si no tiene centro (y no es superadmin), lo mandamos a un error
     if not centro and not request.user.is_superuser:
         messages.error(request, "Tu usuario no tiene un centro escolar asignado.")
-        return redirect('logout')  # O a una página de error genérica
+        return redirect('logout')
 
     ahora = timezone.localtime(timezone.now())
     fecha_hoy = ahora.date()
@@ -31,36 +30,41 @@ def pagina_inicio(request):
     dias_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V', 5: 'S', 6: 'D'}
     dia_sem = dias_map[fecha_hoy.weekday()]
 
-    # CORREGIDO: Filtramos el tramo por el centro actual
     tramo_actual = TramoHorario.objects.filter(
-        centro=centro,  # <--- Aislamos los datos
+        centro=centro,
         dia_semana=dia_sem,
         hora_inicio__lte=hora_actual,
         hora_fin__gte=hora_actual
     ).first()
 
-    # CORREGIDO: Pasamos el centro a las funciones externas (tendrás que actualizar estas funciones también)
     if tramo_actual:
         generar_guardias_del_dia(fecha_hoy, centro)
 
-    # CORREGIDO: Filtramos por centro
     guardias_pendientes = RegistroGuardia.objects.filter(
-        centro=centro,  # <--- Aislamos los datos
+        centro=centro,
         fecha=fecha_hoy,
         tramo_horario=tramo_actual
     ).select_related('profesor_ausente', 'grupo', 'aula') if tramo_actual else []
 
     disponibles = obtener_profesores_disponibles(tramo_actual, fecha_hoy, centro) if tramo_actual else []
 
+    # Métrica ÚTIL: Docentes ausentes hoy
+    docentes_ausentes_hoy = RegistroGuardia.objects.filter(
+        centro=centro,
+        fecha=fecha_hoy
+    ).values('profesor_ausente').distinct().count()
+
     context = {
         'tramo_actual': tramo_actual,
         'guardias_pendientes': guardias_pendientes,
         'profesores_disponibles': disponibles,
         'hora_servidor_iso': ahora.isoformat(),
-        'conteo_pendientes': len([g for g in guardias_pendientes if g.estado == 'PENT']) if tramo_actual else 0
+        'conteo_pendientes': len([g for g in guardias_pendientes if g.estado == 'PENT']) if tramo_actual else 0,
+        'ausencias_hoy': docentes_ausentes_hoy,
     }
 
     return render(request, 'inicio.html', context)
+
 
 
 @login_required
@@ -451,6 +455,7 @@ def gestionar_baja(request, pk=None):
 def eliminar_baja(request, pk):
     centro = obtener_centro_usuario(request)
     baja = get_object_or_404(BajaProfesor, pk=pk, centro=centro)
+    RegistroGuardia.objects.filter(baja_origen=baja).delete()
     baja.delete()
     messages.success(request, "Baja eliminada del sistema.")
     return redirect('gestion_ausencias')
@@ -486,6 +491,7 @@ def gestionar_salida(request, pk=None):
 def eliminar_salida(request, pk):
     centro = obtener_centro_usuario(request)
     salida = get_object_or_404(SalidaExcursion, pk=pk, centro=centro)
+    RegistroGuardia.objects.filter(excursion_origen=salida).delete()
     salida.delete()
     messages.success(request, "Salida/Excursión cancelada y eliminada.")
     return redirect('gestion_ausencias')
@@ -572,6 +578,7 @@ def gestionar_ausencia_puntual(request, pk=None):
 def eliminar_ausencia_puntual(request, pk):
     centro = obtener_centro_usuario(request)
     ap = get_object_or_404(AusenciaPuntual, pk=pk, centro=centro)
+    RegistroGuardia.objects.filter(ausencia_origen=ap).delete()
     ap.delete()
     messages.success(request, "Ausencia puntual cancelada y eliminada.")
     return redirect('gestion_ausencias')
