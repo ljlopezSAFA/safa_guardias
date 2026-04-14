@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-heart-pulse text-danger me-2"></i>Registro de Bajas</h2>
+        <a href="{% url 'centro_datos' %}" class="btn btn-outline-secondary btn-sm">Volver al inicio</a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 bg-light">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-muted">Buscar profesor u observación</label>
+                    <input type="text" name="q" class="form-control" placeholder="Ej: Juan Pérez..." value="{{ q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Desde la fecha</label>
+                    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Hasta la fecha</label>
+                    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                </div>
+                <div class="col-md-1 text-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+            {% if q or fecha_desde or fecha_hasta %}
+            <div class="mt-2 text-end">
+                <a href="{% url 'lista_bajas' %}" class="text-danger small text-decoration-none">Limpiar filtros</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Profesor</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Observaciones</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for baja in bajas %}
+                    <tr>
+                        <td class="fw-bold">{{ baja.profesor.nombre }} {{ baja.profesor.apellidos }}</td>
+                        <td>{{ baja.fecha_inicio|date:"d/m/Y" }}</td>
+                        <td>{{ baja.fecha_fin|date:"d/m/Y"|default:"-" }}</td>
+                        <td class="text-muted small">{{ baja.observaciones|default:"Sin especificar" }}</td>
+                        <td>
+                            {% if baja.fecha_fin %}
+                                <span class="badge bg-secondary">Finalizada</span>
+                            {% else %}
+                                <span class="badge bg-danger">Activa</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center py-4 text-muted">No se encontraron bajas con esos criterios.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

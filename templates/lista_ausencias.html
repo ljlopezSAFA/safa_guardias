@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-clock-history text-warning me-2"></i>Ausencias Puntuales</h2>
+        <a href="{% url 'centro_datos' %}" class="btn btn-outline-secondary btn-sm">Volver al inicio</a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 bg-light">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-muted">Buscar profesor o motivo</label>
+                    <input type="text" name="q" class="form-control" placeholder="Ej: Médico, tutoría..." value="{{ q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+            {% if q or fecha_desde or fecha_hasta %}
+            <div class="mt-2 text-end"><a href="{% url 'lista_ausencias' %}" class="text-danger small text-decoration-none">Limpiar filtros</a></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Profesor</th>
+                        <th>Fecha</th>
+                        <th>Horario</th>
+                        <th>Motivo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ausencia in ausencias %}
+                    <tr>
+                        <td class="fw-bold">{{ ausencia.profesor.nombre }} {{ ausencia.profesor.apellidos }}</td>
+                        <td>{{ ausencia.fecha|date:"d/m/Y" }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ ausencia.hora_inicio|time:"H:i" }} - {{ ausencia.hora_fin|time:"H:i" }}</span></td>
+                        <td class="text-muted">{{ ausencia.motivo|default:"-" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-4 text-muted">No se encontraron ausencias.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

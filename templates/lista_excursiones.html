@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold"><i class="bi bi-bus-front text-primary me-2"></i>Registro de Excursiones</h2>
+        <a href="{% url 'centro_datos' %}" class="btn btn-outline-secondary btn-sm">Volver al inicio</a>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4 bg-light">
+        <div class="card-body">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
+                    <label class="form-label small fw-bold text-muted">Buscar actividad o profesor</label>
+                    <input type="text" name="q" class="form-control" placeholder="Ej: Museo, Teatro..." value="{{ q }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Desde</label>
+                    <input type="date" name="fecha_desde" class="form-control" value="{{ fecha_desde }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small fw-bold text-muted">Hasta</label>
+                    <input type="date" name="fecha_hasta" class="form-control" value="{{ fecha_hasta }}">
+                </div>
+                <div class="col-md-1">
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+            {% if q or fecha_desde or fecha_hasta %}
+            <div class="mt-2 text-end"><a href="{% url 'lista_excursiones' %}" class="text-danger small text-decoration-none">Limpiar filtros</a></div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Actividad</th>
+                        <th>Fechas</th>
+                        <th>Horario</th>
+                        <th>Acompañantes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for exc in excursiones %}
+                    <tr>
+                        <td class="fw-bold text-primary">{{ exc.descripcion }}</td>
+                        <td>
+                            {% if exc.fecha_inicio == exc.fecha_fin %}
+                                {{ exc.fecha_inicio|date:"d/m/Y" }}
+                            {% else %}
+                                {{ exc.fecha_inicio|date:"d/m" }} al {{ exc.fecha_fin|date:"d/m/Y" }}
+                            {% endif %}
+                        </td>
+                        <td><span class="badge bg-light text-dark border">{{ exc.hora_inicio|time:"H:i" }} - {{ exc.hora_fin|time:"H:i" }}</span></td>
+                        <td>
+                            <ul class="list-unstyled mb-0 small">
+                                {% for prof in exc.profesores_acompanantes.all %}
+                                    <li>- {{ prof.nombre }} {{ prof.apellidos }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="4" class="text-center py-4 text-muted">No se encontraron excursiones.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

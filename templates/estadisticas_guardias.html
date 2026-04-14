@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% block body %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <h2 class="fw-bold mb-0"><i class="bi bi-shield-check text-success me-2"></i>Dashboard de Coberturas</h2>
+        <a href="{% url 'centro_datos' %}" class="btn btn-outline-secondary rounded-pill btn-sm">Volver a central</a>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold text-danger"><i class="bi bi-arrow-down-right-circle me-2"></i>Clases sin atender</h5>
+                    <p class="text-muted small mb-0">Profesores que más sesiones generan para cubrir.</p>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless align-middle mt-2">
+                        <tbody>
+                            {% for p in generan_guardias %}
+                            <tr>
+                                <td class="fw-medium">{{ p.nombre }} {{ p.apellidos|truncatechars:15 }}</td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-danger">{{ p.total }}</span> <span class="small text-muted">sesiones</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="2" class="text-center text-muted">No hay registros.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold text-success"><i class="bi bi-person-check me-2"></i>Guardias cubiertas</h5>
+                    <p class="text-muted small mb-0">Profesores que más sesiones de apoyo han realizado.</p>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless align-middle mt-2">
+                        <tbody>
+                            {% for p in cubren_guardias %}
+                            <tr>
+                                <td class="fw-medium">{{ p.nombre }} {{ p.apellidos|truncatechars:15 }}</td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-success">{{ p.total }}</span> <span class="small text-muted">sesiones</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="2" class="text-center text-muted">No hay registros.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white border-bottom-0 pt-4">
+                    <h5 class="fw-bold text-primary"><i class="bi bi-people me-2"></i>Impacto por grupo</h5>
+                    <p class="text-muted small mb-0">Grupos que más ausencias han sufrido.</p>
+                </div>
+                <div class="card-body">
+                    <table class="table table-borderless align-middle mt-2">
+                        <tbody>
+                            {% for grupo in guardias_por_grupo %}
+                            <tr>
+                                <td class="fw-medium">{{ grupo.grupo__nombre|default:"Desconocido" }}</td>
+                                <td class="text-end">
+                                    <span class="fw-bold text-primary">{{ grupo.total }}</span> <span class="small text-muted">guardias</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="2" class="text-center text-muted">No hay registros.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

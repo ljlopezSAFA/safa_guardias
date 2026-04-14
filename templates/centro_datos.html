@@ -137,7 +137,8 @@
                         </div>
                         <h5 class="fw-bold">Cuadrante Guardias</h5>
                         <p class="text-muted small">Configurar quién tiene guardia y cuándo.</p>
-                        <a href="{%  url 'gestionar_guardias' %}" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                        <a href="{% url 'gestionar_guardias' %}"
+                           class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
                     </div>
                 </div>
             </div>
@@ -157,7 +158,8 @@
                         </div>
                         <h5 class="fw-bold">Profesores</h5>
                         <p class="text-muted small">Gestión manual de la plantilla docente del centro.</p>
-                        <a href="{%  url 'gestionar_profesores' %}" class="btn btn-safa w-100 rounded-pill mt-2">Ver Profesores</a>
+                        <a href="{% url 'gestionar_profesores' %}" class="btn btn-safa w-100 rounded-pill mt-2">Ver
+                            Profesores</a>
                     </div>
                 </div>
             </div>
@@ -168,58 +170,70 @@
         <h5 class="fw-bold text-secondary mb-3"><i class="bi bi-activity me-2"></i>Operativa e Incidencias</h5>
         <div class="row g-4">
 
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
-                    <div class="card-body p-4 text-center">
-                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
-                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-heart-pulse fs-3"></i>
+            <div class="col-md-6 col-lg-8">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                            <div class="card-body p-3 text-center">
+                                <i class="bi bi-heart-pulse fs-2 text-danger mb-2 d-block"></i>
+                                <h6 class="fw-bold">Bajas Médicas</h6>
+                                <a href="{% url 'lista_bajas' %}"
+                                   class="btn btn-outline-secondary btn-sm w-100 rounded-pill mt-2">Ver Registro</a>
+                            </div>
                         </div>
-                        <h5 class="fw-bold">Bajas Médicas</h5>
-                        <p class="text-muted small">Control de bajas de larga duración.</p>
-                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                            <div class="card-body p-3 text-center">
+                                <i class="bi bi-clock-history fs-2 text-warning mb-2 d-block"></i>
+                                <h6 class="fw-bold">Ausencias puntuales</h6>
+                                <a href="{% url 'lista_ausencias' %}"
+                                   class="btn btn-outline-secondary btn-sm w-100 rounded-pill mt-2">Ver Registro</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm hover-shadow transition">
+                            <div class="card-body p-3 text-center">
+                                <i class="bi bi-bus-front fs-2 text-primary mb-2 d-block"></i>
+                                <h6 class="fw-bold">Excursiones</h6>
+                                <a href="{% url 'lista_excursiones' %}"
+                                   class="btn btn-outline-secondary btn-sm w-100 rounded-pill mt-2">Ver Registro</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
-                    <div class="card-body p-4 text-center">
-                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
-                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-clock-history fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Ausencias</h5>
-                        <p class="text-muted small">Ausencias puntuales y permisos.</p>
-                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
+            <div class="col-md-6 col-lg-4">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <a href="{% url 'estadisticas_ausencias' %}" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm hover-shadow transition"
+                                 style="background-color: #f8f9fa;">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <i class="bi bi-graph-up-arrow fs-3 text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">Estadísticas Ausencias</h6>
+                                        <small class="text-muted">Análisis de bajas y permisos</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
                     </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
-                    <div class="card-body p-4 text-center">
-                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
-                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-bus-front fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Excursiones</h5>
-                        <p class="text-muted small">Salidas extraescolares y actividades.</p>
-                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Gestionar</a>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6 col-lg-3">
-                <div class="card h-100 border-0 shadow-sm hover-shadow transition">
-                    <div class="card-body p-4 text-center">
-                        <div class="icon-safa bg-light rounded-circle mb-3 mx-auto"
-                             style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-clipboard-check fs-3"></i>
-                        </div>
-                        <h5 class="fw-bold">Registro Guardias</h5>
-                        <p class="text-muted small">Histórico de clases a cubrir y cubiertas.</p>
-                        <a href="#" class="btn btn-safa w-100 rounded-pill mt-2">Ver Histórico</a>
+                    <div class="col-12">
+                        <a href="{% url 'estadisticas_guardias' %}" class="text-decoration-none">
+                            <div class="card border-0 shadow-sm hover-shadow transition"
+                                 style="background-color: #f8f9fa;">
+                                <div class="card-body p-3 d-flex align-items-center">
+                                    <i class="bi bi-shield-check fs-3 text-success me-3"></i>
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">Dashboard Guardias</h6>
+                                        <small class="text-muted">Análisis de coberturas</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
                     </div>
                 </div>
             </div>

@@ -59,4 +59,14 @@ urlpatterns = [
 
     path('datos/profesores/', views.gestionar_profesores, name='gestionar_profesores'),
 
+    # Listados (Solo lectura y búsqueda)
+    path('central/bajas/', views.lista_bajas, name='lista_bajas'),
+    path('central/ausencias/', views.lista_ausencias, name='lista_ausencias'),
+    path('central/excursiones/', views.lista_excursiones, name='lista_excursiones'),
+
+    # Dashboards Analíticos
+    path('central/estadisticas/ausencias/', views.estadisticas_ausencias, name='estadisticas_ausencias'),
+    path('central/estadisticas/guardias/', views.estadisticas_guardias, name='estadisticas_guardias'),
+
+
 ]

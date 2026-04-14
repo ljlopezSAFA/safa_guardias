@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, date
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError, transaction
-from django.db.models import Q, Count
+from django.db.models import Q, Count, ExpressionWrapper, Sum, F, fields
+from django.db.models.functions import Coalesce
 from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Case, When, Value, IntegerField
@@ -70,7 +71,8 @@ def pagina_inicio(request):
         'guardias_pendientes': guardias_pendientes,
         'profesores_disponibles': disponibles,
         'hora_servidor_iso': ahora.isoformat(),
-        'conteo_pendientes': len([g for g in guardias_pendientes if g.estado == 'PENT']) if tramos_actuales.exists() else 0,
+        'conteo_pendientes': len(
+            [g for g in guardias_pendientes if g.estado == 'PENT']) if tramos_actuales.exists() else 0,
         'ausencias_hoy': docentes_ausentes_hoy,
     }
 
@@ -252,6 +254,7 @@ def central_importar(request):
         form = CentralImportForm()
 
     return render(request, 'importar_csv.html', {'form': form, 'es_admin': es_admin, 'centro': centro_actual})
+
 
 def descargar_plantilla_csv(request, tipo):
     """Genera y descarga un CSV de plantilla basado en el tipo solicitado"""
@@ -485,6 +488,7 @@ def eliminar_baja(request, pk):
     messages.success(request, "Baja eliminada del sistema.")
     return redirect('gestion_ausencias')
 
+
 # --- CRUD PARA EXCURSIONES ---
 @login_required
 def gestionar_salida(request, pk=None):
@@ -649,7 +653,6 @@ def eliminar_ausencia_puntual(request, pk):
 
     messages.success(request, "Ausencia puntual cancelada y eliminada.")
     return redirect('gestion_ausencias')
-
 
 
 def generar_guardias_del_dia(fecha_consulta=None, centro=None):
@@ -827,7 +830,7 @@ def gestion_guardias_global(request):
 
     fecha_str = request.GET.get('fecha')
     tramo_id = request.GET.get('tramo')
-    grupo_etapas = request.GET.get('grupo_etapas') # <-- Nuevo parámetro agrupado
+    grupo_etapas = request.GET.get('grupo_etapas')  # <-- Nuevo parámetro agrupado
 
     if fecha_str:
         try:
@@ -881,7 +884,8 @@ def gestion_guardias_global(request):
     guardias_tramo = guardias_dia.filter(tramo_horario=tramo_seleccionado) if tramo_seleccionado else []
 
     # Profesores disponibles
-    disponibles = obtener_profesores_disponibles(tramo_seleccionado, fecha_consulta, centro) if tramo_seleccionado else []
+    disponibles = obtener_profesores_disponibles(tramo_seleccionado, fecha_consulta,
+                                                 centro) if tramo_seleccionado else []
 
     # Resumen de pendientes/totales para la interfaz
     resumen_tramos = guardias_dia.values('tramo_horario').annotate(
@@ -897,10 +901,9 @@ def gestion_guardias_global(request):
         'guardias_tramo': guardias_tramo,
         'profesores_disponibles': disponibles,
         'info_tramos': info_tramos,
-        'grupo_etapas': grupo_etapas, # Pasamos el valor actual para mantener seleccionado el select
+        'grupo_etapas': grupo_etapas,  # Pasamos el valor actual para mantener seleccionado el select
     }
     return render(request, 'gestion_guardias_global.html', context)
-
 
 
 def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, centro):
@@ -926,7 +929,7 @@ def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, 
     # CORREGIDO: Aislamos por centro a través del profesor
     guardias_dict = {
         hg.profesor_id: hg.prioridad
-        for hg in HorarioGuardia.objects.filter(profesor__centro=centro, tramo_horario=tramo) # <--- Y AQUÍ
+        for hg in HorarioGuardia.objects.filter(profesor__centro=centro, tramo_horario=tramo)  # <--- Y AQUÍ
     }
 
     # ESTO ESTÁ BIEN: SalidaExcursion tiene el campo centro
@@ -975,6 +978,7 @@ def calcular_porcentaje_compatibilidad(profesores_disponibles, registro, fecha, 
     lista_evaluada.sort(key=lambda x: x.porcentaje, reverse=True)
 
     return lista_evaluada
+
 
 @login_required
 def asignar_guardia(request, registro_id):
@@ -1092,8 +1096,6 @@ def cambiar_centro_sesion(request):
     # Redirigimos a la página desde la que el usuario hizo el post (o a inicio si falla)
     next_url = request.META.get('HTTP_REFERER', 'pagina_inicio')
     return redirect(next_url)
-
-
 
 
 @login_required
@@ -1729,3 +1731,181 @@ def gestionar_profesores(request):
         'current_filters': request.GET,
     }
     return render(request, 'gestionar_profesores.html', contexto)
+
+
+@login_required
+def lista_bajas(request):
+    centro = obtener_centro_usuario(request)
+    bajas = BajaProfesor.objects.filter(profesor__centro=centro).order_by('-fecha_inicio')
+
+    # Recogemos los filtros del GET
+    q = request.GET.get('q', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+
+    # Aplicamos filtros
+    if q:
+        bajas = bajas.filter(
+            Q(profesor__nombre__icontains=q) |
+            Q(profesor__apellidos__icontains=q) |
+            Q(observaciones__icontains=q)
+        )
+    if fecha_desde:
+        bajas = bajas.filter(fecha_inicio__gte=fecha_desde)
+    if fecha_hasta:
+        # Filtramos bajas cuya fecha_fin sea anterior al filtro, o que aún no tengan fecha_fin
+        bajas = bajas.filter(
+            Q(fecha_fin__lte=fecha_hasta) | Q(fecha_fin__isnull=True, fecha_inicio__lte=fecha_hasta)
+        )
+
+    context = {'bajas': bajas, 'q': q, 'fecha_desde': fecha_desde, 'fecha_hasta': fecha_hasta}
+    return render(request, 'lista_bajas.html', context)
+
+
+@login_required
+def lista_ausencias(request):
+    centro = obtener_centro_usuario(request)
+    ausencias = AusenciaPuntual.objects.filter(profesor__centro=centro).order_by('-fecha')
+
+    q = request.GET.get('q', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+
+    if q:
+        ausencias = ausencias.filter(
+            Q(profesor__nombre__icontains=q) |
+            Q(profesor__apellidos__icontains=q) |
+            Q(motivo__icontains=q)
+        )
+    if fecha_desde:
+        ausencias = ausencias.filter(fecha__gte=fecha_desde)
+    if fecha_hasta:
+        ausencias = ausencias.filter(fecha__lte=fecha_hasta)
+
+    context = {'ausencias': ausencias, 'q': q, 'fecha_desde': fecha_desde, 'fecha_hasta': fecha_hasta}
+    return render(request, 'lista_ausencias.html', context)
+
+
+@login_required
+def lista_excursiones(request):
+    centro = obtener_centro_usuario(request)
+    # Usamos distinct() porque filtramos por campos ManyToMany
+    excursiones = SalidaExcursion.objects.filter(profesores_acompanantes__centro=centro).distinct().order_by(
+        '-fecha_inicio')
+
+    q = request.GET.get('q', '')
+    fecha_desde = request.GET.get('fecha_desde', '')
+    fecha_hasta = request.GET.get('fecha_hasta', '')
+
+    if q:
+        excursiones = excursiones.filter(
+            Q(descripcion__icontains=q) |
+            Q(profesores_acompanantes__nombre__icontains=q) |
+            Q(profesores_acompanantes__apellidos__icontains=q)
+        ).distinct()
+    if fecha_desde:
+        excursiones = excursiones.filter(fecha_inicio__gte=fecha_desde)
+    if fecha_hasta:
+        excursiones = excursiones.filter(fecha_fin__lte=fecha_hasta)
+
+    context = {'excursiones': excursiones, 'q': q, 'fecha_desde': fecha_desde, 'fecha_hasta': fecha_hasta}
+    return render(request, 'lista_excursiones.html', context)
+
+
+# --- 2. DASHBOARD GUARDIAS (CORREGIDO) ---
+
+@login_required
+def estadisticas_guardias(request):
+    centro = obtener_centro_usuario(request)
+
+    # PROFESORES QUE MÁS FALTAN (Usamos 'clases_perdidas' según tu modelo)
+    generan_guardias = Profesor.objects.filter(centro=centro, clases_perdidas__isnull=False).annotate(
+        total=Count('clases_perdidas', distinct=True)
+    ).order_by('-total')[:10]
+
+    # PROFESORES QUE MÁS CUBREN (Usamos 'guardias_atendidas' según tu modelo)
+    cubren_guardias = Profesor.objects.filter(centro=centro, guardias_atendidas__isnull=False).annotate(
+        total=Count('guardias_atendidas', distinct=True)
+    ).order_by('-total')[:10]
+
+    # GUARDIAS POR GRUPO (Como no me has pasado el modelo Etapa, lo agrupo por el nombre del Grupo)
+    guardias_por_grupo = RegistroGuardia.objects.filter(profesor_ausente__centro=centro).values(
+        'grupo__nombre').annotate(
+        total=Count('id')
+    ).order_by('-total')[:10]
+
+    context = {
+        'centro': centro,
+        'generan_guardias': generan_guardias,
+        'cubren_guardias': cubren_guardias,
+        'guardias_por_grupo': guardias_por_grupo
+    }
+    return render(request, 'estadisticas_guardias.html', context)
+
+
+
+
+
+@login_required
+def estadisticas_ausencias(request):
+    centro = obtener_centro_usuario(request)
+
+    # 1. BAJAS: Total de días
+    bajas_qs = Profesor.objects.filter(centro=centro, bajas__isnull=False).annotate(
+        total_bajas=Count('bajas', distinct=True),
+        dias_totales=Sum(
+            ExpressionWrapper(
+                Coalesce(F('bajas__fecha_fin'), date.today()) - F('bajas__fecha_inicio'),
+                output_field=fields.DurationField()
+            )
+        )
+    ).order_by('-dias_totales')[:10]
+
+    # 2. AUSENCIAS PUNTUALES: Días y Horas Totales
+    ausencias_qs = Profesor.objects.filter(centro=centro, ausencias_puntuales__isnull=False).annotate(
+        total_dias=Count('ausencias_puntuales', distinct=True)
+    ).order_by('-total_dias')[:10]
+
+    ausencias_stats = []
+    for prof in ausencias_qs:
+        minutos_totales = 0
+        for ausencia in prof.ausencias_puntuales.all():
+            # Cálculo de horas seguro en Python
+            t1 = datetime.combine(date.today(), ausencia.hora_inicio)
+            t2 = datetime.combine(date.today(), ausencia.hora_fin)
+            minutos_totales += (t2 - t1).total_seconds() / 60
+        ausencias_stats.append({
+            'profesor': prof,
+            'total_dias': prof.total_dias,
+            'horas_totales': round(minutos_totales / 60, 1)
+        })
+
+    # 3. EXCURSIONES: Salidas, Días y Horas
+    excursiones_qs = Profesor.objects.filter(centro=centro, excursiones_asignadas__isnull=False).annotate(
+        total_salidas=Count('excursiones_asignadas', distinct=True)
+    ).order_by('-total_salidas')[:10]
+
+    excursiones_stats = []
+    for prof in excursiones_qs:
+        dias_totales = 0
+        minutos_totales = 0
+        for exc in prof.excursiones_asignadas.all():
+            dias_totales += (exc.fecha_fin - exc.fecha_inicio).days + 1
+            t1 = datetime.combine(date.today(), exc.hora_inicio)
+            t2 = datetime.combine(date.today(), exc.hora_fin)
+            minutos_totales += ((t2 - t1).total_seconds() / 60) * ((exc.fecha_fin - exc.fecha_inicio).days + 1)
+
+        excursiones_stats.append({
+            'profesor': prof,
+            'total_salidas': prof.total_salidas,
+            'dias_totales': dias_totales,
+            'horas_totales': round(minutos_totales / 60, 1)
+        })
+
+    context = {
+        'centro': centro,
+        'bajas_stats': bajas_qs,
+        'ausencias_stats': ausencias_stats,
+        'excursiones_stats': excursiones_stats,
+    }
+    return render(request, 'estadisticas_ausencias.html', context)
