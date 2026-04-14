@@ -4,6 +4,7 @@
     <main class="container py-4">
 
         <div class="dashboard-header p-4 mb-4 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-center">
+
             <div class="d-flex flex-column align-items-center align-items-md-start mb-4 mb-md-0">
                 <div class="d-flex align-items-center gap-3">
                     <div class="clock-time" id="realtime-clock">--:--:--</div>
@@ -17,12 +18,34 @@
             <div class="text-center text-md-end">
                 <p class="mb-2 text-muted text-uppercase small fw-bold" style="letter-spacing: 1px;">Estado Actual</p>
 
-                {% if tramo_actual %}
-                    <div class="slot-badge shadow-sm bg-white border border-primary">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="spinner-grow spinner-grow-sm text-primary" role="status" aria-hidden="true"></span>
-                            <span class="text-primary fw-bold">{{ tramo_actual.hora_inicio|time:"H:i" }} - {{ tramo_actual.hora_fin|time:"H:i" }}</span>
-                        </div>
+                {% if tramos_actuales %}
+                    <div class="d-flex flex-column gap-2 align-items-center align-items-md-end">
+                        {% for tramo in tramos_actuales %}
+
+                            {% if tramo.es_recreo %}
+                                <div class="slot-badge shadow-sm bg-white border" style="border-color: #fd7e14 !important;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="bi bi-cup-hot-fill" style="color: #fd7e14; font-size: 1.2rem;"></i>
+                                        <span class="fw-bold" style="color: #fd7e14;">{{ tramo.hora_inicio|time:"H:i" }} - {{ tramo.hora_fin|time:"H:i" }}</span>
+                                        <span class="badge ms-2" style="background-color: #fd7e14; color: white;">
+                                            {% for etapa in tramo.etapas.all %}{{ etapa }}{% if not forloop.last %}, {% endif %}{% empty %}Recreo{% endfor %}
+                                        </span>
+                                    </div>
+                                </div>
+
+                            {% else %}
+                                <div class="slot-badge shadow-sm bg-white border border-primary">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="spinner-grow spinner-grow-sm text-primary" role="status" aria-hidden="true" style="animation-duration: 2.5s;"></span>
+                                        <span class="text-primary fw-bold">{{ tramo.hora_inicio|time:"H:i" }} - {{ tramo.hora_fin|time:"H:i" }}</span>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 ms-2">
+                                            {% for etapa in tramo.etapas.all %}{{ etapa }}{% if not forloop.last %}, {% endif %}{% empty %}Clase{% endfor %}
+                                        </span>
+                                    </div>
+                                </div>
+                            {% endif %}
+
+                        {% endfor %}
                     </div>
                 {% else %}
                     <div class="slot-badge inactive shadow-sm border-0">
@@ -34,7 +57,6 @@
         </div>
 
         <div class="row g-4 mb-5">
-
             <div class="col-xl-3 col-md-6">
                 <div class="card card-action shadow-sm p-4 h-100" style="border-top-color: var(--safa-blue);">
                     <div class="d-flex justify-content-between align-items-start mb-2">
@@ -83,7 +105,6 @@
                     <a href="{% url 'centro_datos' %}" class="btn btn-outline-secondary w-100 mt-auto fw-bold">Ir a Central</a>
                 </div>
             </div>
-
         </div>
 
         <div class="row g-4">
@@ -109,6 +130,7 @@
                             <table class="table table-hover align-middle table-panel">
                                 <thead class="table-light">
                                 <tr>
+                                    <th>Tramo / Etapa</th>
                                     <th>Ausente</th>
                                     <th>Grupo</th>
                                     <th>Aula</th>
@@ -120,6 +142,14 @@
                                 <tbody>
                                 {% for g in guardias_pendientes %}
                                     <tr>
+                                        <td>
+                                            <div class="d-flex flex-column align-items-start">
+                                                <span class="badge bg-light text-dark border mb-1"><i class="bi bi-clock me-1"></i>{{ g.tramo_horario.hora_inicio|time:"H:i" }}</span>
+                                                <small class="text-muted" style="font-size: 0.7rem;">
+                                                    {% for etapa in g.tramo_horario.etapas.all %}{{ etapa }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                                </small>
+                                            </div>
+                                        </td>
                                         <td class="fw-bold text-dark">{{ g.profesor_ausente.apellidos }}, {{ g.profesor_ausente.nombre|slice:":1" }}.</td>
                                         <td>{{ g.grupo.nombre }}</td>
                                         <td><span class="badge bg-light text-dark border"><i class="bi bi-door-open me-1"></i>{{ g.aula.abrev }}</span></td>
@@ -143,13 +173,13 @@
                                     </tr>
                                 {% empty %}
                                     <tr>
-                                        <td colspan="6" class="text-center py-5 border-0">
+                                        <td colspan="7" class="text-center py-5 border-0">
                                             <div class="p-4 rounded-4 bg-success bg-opacity-10 d-inline-block border border-success border-opacity-25">
                                                 <i class="bi bi-cup-hot-fill fs-1 text-success d-block mb-2"></i>
                                                 <h6 class="fw-bold text-success mb-1">Todo bajo control</h6>
                                                 <span class="text-success opacity-75 small">
-                                                    {% if tramo_actual %}
-                                                        No hay guardias pendientes en este tramo.
+                                                    {% if tramos_actuales %}
+                                                        No hay guardias pendientes en este momento.
                                                     {% else %}
                                                         No hay actividad lectiva en este momento.
                                                     {% endif %}
@@ -185,7 +215,9 @@
                                         </div>
                                         <div>
                                             <h6 class="mb-0 fw-bold" style="font-size: 0.9rem;">{{ profe.apellidos }}, {{ profe.nombre|slice:":1" }}.</h6>
-                                            <small class="text-muted" style="font-size: 0.75rem;">Guardia</small>
+                                            <small class="text-muted" style="font-size: 0.75rem;">Guardia: {{ profe.tramo_asociado.hora_inicio|time:"H:i" }}
+                                                ({% for etapa in profe.tramo_asociado.etapas.all %}{{ etapa }}{% if not forloop.last %}, {% endif %}{% endfor %})
+                                            </small>
                                         </div>
                                     </div>
 

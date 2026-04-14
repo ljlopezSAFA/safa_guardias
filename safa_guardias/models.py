@@ -91,7 +91,7 @@ class Etapa(CentroSaaSModel):
         unique_together = ['centro', 'siglas'] # Cada centro tiene sus siglas únicas
 
     def __str__(self):
-        return f"{self.siglas} - {self.centro.nombre}"
+        return f"{self.siglas}"
 
 
 class Grupo(CentroSaaSModel):

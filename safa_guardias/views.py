@@ -30,41 +30,51 @@ def pagina_inicio(request):
     dias_map = {0: 'L', 1: 'M', 2: 'X', 3: 'J', 4: 'V', 5: 'S', 6: 'D'}
     dia_sem = dias_map[fecha_hoy.weekday()]
 
-    tramo_actual = TramoHorario.objects.filter(
+    # AÑADIDO: .prefetch_related('etapas') para optimizar la carga del ManyToMany
+    tramos_actuales = TramoHorario.objects.filter(
         centro=centro,
         dia_semana=dia_sem,
         hora_inicio__lte=hora_actual,
         hora_fin__gte=hora_actual
-    ).first()
+    ).prefetch_related('etapas')
 
-    if tramo_actual:
+    if tramos_actuales.exists():
         generar_guardias_del_dia(fecha_hoy, centro)
 
-    guardias_pendientes = RegistroGuardia.objects.filter(
-        centro=centro,
-        fecha=fecha_hoy,
-        tramo_horario=tramo_actual
-    ).select_related('profesor_ausente', 'grupo', 'aula') if tramo_actual else []
+    guardias_pendientes = []
+    if tramos_actuales.exists():
+        guardias_pendientes = RegistroGuardia.objects.filter(
+            centro=centro,
+            fecha=fecha_hoy,
+            tramo_horario__in=tramos_actuales
+        ).select_related('profesor_ausente', 'grupo', 'aula', 'tramo_horario').prefetch_related('tramo_horario__etapas')
 
-    disponibles = obtener_profesores_disponibles(tramo_actual, fecha_hoy, centro) if tramo_actual else []
+    disponibles = []
+    if tramos_actuales.exists():
+        vistos = set()
+        for tramo in tramos_actuales:
+            profes_tramo = obtener_profesores_disponibles(tramo, fecha_hoy, centro)
+            for p in profes_tramo:
+                if p.id not in vistos:
+                    p.tramo_asociado = tramo
+                    disponibles.append(p)
+                    vistos.add(p.id)
 
-    # Métrica ÚTIL: Docentes ausentes hoy
     docentes_ausentes_hoy = RegistroGuardia.objects.filter(
         centro=centro,
         fecha=fecha_hoy
     ).values('profesor_ausente').distinct().count()
 
     context = {
-        'tramo_actual': tramo_actual,
+        'tramos_actuales': tramos_actuales,
         'guardias_pendientes': guardias_pendientes,
         'profesores_disponibles': disponibles,
         'hora_servidor_iso': ahora.isoformat(),
-        'conteo_pendientes': len([g for g in guardias_pendientes if g.estado == 'PENT']) if tramo_actual else 0,
+        'conteo_pendientes': len([g for g in guardias_pendientes if g.estado == 'PENT']) if tramos_actuales.exists() else 0,
         'ausencias_hoy': docentes_ausentes_hoy,
     }
 
     return render(request, 'inicio.html', context)
-
 
 
 @login_required
@@ -434,17 +444,29 @@ def gestionar_baja(request, pk=None):
     titulo = "Editar Baja de Profesor" if pk else "Registrar Nueva Baja"
 
     if request.method == 'POST':
-        # ¡IMPORTANTE! Pasamos centro=centro aquí
         form = BajaProfesorForm(request.POST, instance=baja, centro=centro)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.centro = centro
             obj.save()
 
+            # LIMPIEZA: Si acortamos las fechas de la baja, borramos guardias huérfanas
+            if pk:
+                if obj.fecha_fin:
+                    RegistroGuardia.objects.filter(baja_origen=obj).filter(
+                        Q(fecha__lt=obj.fecha_inicio) | Q(fecha__gt=obj.fecha_fin)
+                    ).delete()
+                else:
+                    RegistroGuardia.objects.filter(baja_origen=obj, fecha__lt=obj.fecha_inicio).delete()
+
+            # REGENERACIÓN: Si la baja afecta a hoy, generamos guardias
+            hoy = timezone.localtime(timezone.now()).date()
+            if obj.fecha_inicio <= hoy and (not obj.fecha_fin or hoy <= obj.fecha_fin):
+                generar_guardias_del_dia(hoy, centro)
+
             messages.success(request, f"Baja {'actualizada' if pk else 'registrada'} correctamente.")
             return redirect('gestion_ausencias')
     else:
-        # ¡Y AQUÍ TAMBIÉN! Para cuando cargamos el formulario vacío
         form = BajaProfesorForm(instance=baja, centro=centro)
 
     return render(request, 'formulario_ausencias.html',
@@ -455,11 +477,13 @@ def gestionar_baja(request, pk=None):
 def eliminar_baja(request, pk):
     centro = obtener_centro_usuario(request)
     baja = get_object_or_404(BajaProfesor, pk=pk, centro=centro)
+
+    # Eliminamos las guardias generadas por esta baja
     RegistroGuardia.objects.filter(baja_origen=baja).delete()
     baja.delete()
+
     messages.success(request, "Baja eliminada del sistema.")
     return redirect('gestion_ausencias')
-
 
 # --- CRUD PARA EXCURSIONES ---
 @login_required
@@ -469,18 +493,34 @@ def gestionar_salida(request, pk=None):
     titulo = "Editar Salida/Excursión" if pk else "Programar Nueva Salida"
 
     if request.method == 'POST':
-        # ¡Añadimos centro=centro!
         form = SalidaExcursionForm(request.POST, instance=salida, centro=centro)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.centro = centro
             obj.save()
-            form.save_m2m()
+            form.save_m2m()  # Guardamos relaciones ManyToMany (vital para los grupos)
+
+            # LIMPIEZA INCONGRUENCIAS (La magia del cruce de horarios)
+            if obj.grupos_implicados.exists():
+                # Borramos cualquier guardia previa (generada por una baja, por ejemplo)
+                # que afecte a estos grupos, en estas fechas, y que se solape con las horas de la excursión.
+                RegistroGuardia.objects.filter(
+                    centro=centro,
+                    fecha__range=[obj.fecha_inicio, obj.fecha_fin],
+                    grupo__in=obj.grupos_implicados.all(),
+                    # Fórmula de solapamiento: (Inicio Tramo < Fin Excursión) Y (Fin Tramo > Inicio Excursión)
+                    tramo_horario__hora_inicio__lt=obj.hora_fin,
+                    tramo_horario__hora_fin__gt=obj.hora_inicio
+                ).delete()
+
+            # REGENERACIÓN: Si los profesores acompañantes dejan clases vacías hoy
+            hoy = timezone.localtime(timezone.now()).date()
+            if obj.fecha_inicio <= hoy <= obj.fecha_fin:
+                generar_guardias_del_dia(hoy, centro)
 
             messages.success(request, f"Excursión {'actualizada' if pk else 'programada'} correctamente.")
             return redirect('gestion_ausencias')
     else:
-        # ¡Añadimos centro=centro!
         form = SalidaExcursionForm(instance=salida, centro=centro)
 
     return render(request, 'formulario_ausencias.html',
@@ -491,8 +531,21 @@ def gestionar_salida(request, pk=None):
 def eliminar_salida(request, pk):
     centro = obtener_centro_usuario(request)
     salida = get_object_or_404(SalidaExcursion, pk=pk, centro=centro)
+
+    # Borramos las guardias creadas porque los profes se habían ido a esta excursión
     RegistroGuardia.objects.filter(excursion_origen=salida).delete()
+
+    # Comprobamos si la excursión era hoy antes de borrarla
+    hoy = timezone.localtime(timezone.now()).date()
+    era_hoy = salida.fecha_inicio <= hoy <= salida.fecha_fin
+
     salida.delete()
+
+    # REGENERACIÓN: Al cancelar la excursión, los grupos y profesores vuelven.
+    # Regeneramos por si hay bajas pendientes de cubrir en esos grupos.
+    if era_hoy:
+        generar_guardias_del_dia(hoy, centro)
+
     messages.success(request, "Salida/Excursión cancelada y eliminada.")
     return redirect('gestion_ausencias')
 
@@ -547,23 +600,35 @@ def gestion_ausencias(request):
 
 # --- CRUD PARA AUSENCIAS PUNTUALES ---
 @login_required
-@login_required
 def gestionar_ausencia_puntual(request, pk=None):
     centro = obtener_centro_usuario(request)
     ausencia = get_object_or_404(AusenciaPuntual, pk=pk, centro=centro) if pk else None
 
     if request.method == 'POST':
-        # ¡Añadimos centro=centro!
         form = AusenciaPuntualForm(request.POST, instance=ausencia, centro=centro)
         if form.is_valid():
             obj = form.save(commit=False)
             obj.centro = centro
             obj.save()
 
+            # LIMPIEZA: Si ha cambiado la fecha o las horas en la edición
+            if pk:
+                # Borramos las guardias de otra fecha
+                RegistroGuardia.objects.filter(ausencia_origen=obj).exclude(fecha=obj.fecha).delete()
+                # Borramos las guardias que ya no entran en el nuevo rango horario
+                RegistroGuardia.objects.filter(ausencia_origen=obj).exclude(
+                    tramo_horario__hora_inicio__lt=obj.hora_fin,
+                    tramo_horario__hora_fin__gt=obj.hora_inicio
+                ).delete()
+
+            # REGENERACIÓN: Si la ausencia es para hoy
+            hoy = timezone.localtime(timezone.now()).date()
+            if obj.fecha == hoy:
+                generar_guardias_del_dia(hoy, centro)
+
             messages.success(request, "Ausencia puntual registrada.")
             return redirect('gestion_ausencias')
     else:
-        # ¡Añadimos centro=centro!
         form = AusenciaPuntualForm(instance=ausencia, centro=centro)
 
     return render(request, 'formulario_ausencias.html', {
@@ -578,8 +643,10 @@ def gestionar_ausencia_puntual(request, pk=None):
 def eliminar_ausencia_puntual(request, pk):
     centro = obtener_centro_usuario(request)
     ap = get_object_or_404(AusenciaPuntual, pk=pk, centro=centro)
+
     RegistroGuardia.objects.filter(ausencia_origen=ap).delete()
     ap.delete()
+
     messages.success(request, "Ausencia puntual cancelada y eliminada.")
     return redirect('gestion_ausencias')
 
