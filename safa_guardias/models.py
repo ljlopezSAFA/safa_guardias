@@ -9,7 +9,7 @@ class CentroSaaSModel(models.Model):
     centro = models.ForeignKey(
         'CentroEscolar',
         on_delete=models.CASCADE,
-        null=True, # Lo dejamos nullable por ahora para que no te dé error al hacer makemigrations con datos existentes
+        null=True, # Lo dejamos nullable por ahora para que no te dé error al hacer make migrations con datos existentes
         blank=True
     )
 
@@ -201,7 +201,6 @@ class RegistroGuardia(CentroSaaSModel):
     profesor_guardia = models.ForeignKey(Profesor, on_delete=models.SET_NULL, null=True, blank=True, related_name='guardias_atendidas')
     estado = models.CharField(max_length=4, choices=ESTADO_CHOICES, default='PENT')
     observaciones = models.TextField(blank=True)
-
     baja_origen = models.ForeignKey('BajaProfesor', on_delete=models.SET_NULL, null=True, blank=True, related_name='guardias_generadas')
     excursion_origen = models.ForeignKey('SalidaExcursion', on_delete=models.SET_NULL, null=True, blank=True, related_name='guardias_generadas')
     ausencia_origen = models.ForeignKey('AusenciaPuntual', on_delete=models.SET_NULL, null=True, blank=True, related_name='guardias_generadas')

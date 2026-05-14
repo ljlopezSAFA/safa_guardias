@@ -164,6 +164,7 @@ def central_importar(request):
                                     centro=centro_actual,
                                     abrev=row[2].strip(),
                                     defaults={
+                                        'centro': centro_actual,
                                         'nombre': row[0].strip(),
                                         'pabellon': row[1].strip(),
                                     }
@@ -202,7 +203,7 @@ def central_importar(request):
 
                                     obj, created = Horario.objects.update_or_create(
                                         tramo_horario=tramo, grupo=grupo, profesor=profesor,
-                                        defaults={'materia': materia, 'aula': aula}
+                                        defaults={'materia': materia, 'aula': aula, 'centro': centro_actual}
                                     )
                                 except Exception as e:
                                     print(f"Error en fila {row}: {e}")
@@ -221,7 +222,7 @@ def central_importar(request):
 
                                     obj, created = HorarioGuardia.objects.update_or_create(
                                         tramo_horario=tramo, profesor=profesor,
-                                        defaults={'tipo_guardia': row[3].strip().upper(), 'prioridad': prioridad_val}
+                                        defaults={'tipo_guardia': row[3].strip().upper(), 'prioridad': prioridad_val,'centro': centro_actual}
                                     )
                                 except Exception as e:
                                     print(f"Error en fila guardia {row}: {e}")
